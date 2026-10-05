@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Package, Wallet, LayoutDashboard } from 'lucide-react';
+import { Package, Wallet, LayoutDashboard, ShoppingBag, Boxes } from 'lucide-react';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/pesanan', label: 'Pesanan', icon: Package },
   { to: '/keuangan', label: 'Keuangan', icon: Wallet },
+  { to: '/produk', label: 'Produk', icon: ShoppingBag },
+  { to: '/stok-bahan', label: 'Stok Bahan', icon: Boxes },
 ];
 
 export default function Sidebar() {
