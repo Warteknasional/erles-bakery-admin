@@ -1,72 +1,34 @@
 import { useState } from 'react';
-import { useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { LogIn, Lock, Mail, AlertCircle, AlertTriangle } from 'lucide-react';
-import useAuth from '../hooks/useAuth';
-import useToast from '../hooks/useToast';
-import FormField from '../components/common/FormField';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 export default function LoginPage() {
-  const { login, isAuthenticated } = useAuth();
-  const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [generalError, setGeneralError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [rateLimitError, setRateLimitError] = useState('');
+  const [error, setError] = useState('');
 
-  // If already logged in, navigate away
   const from = location.state?.from?.pathname || '/';
-  if (isAuthenticated) {
-    return <Navigate to={from} replace />;
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setGeneralError('');
-    setFieldErrors({});
-    setRateLimitError('');
-
-    if (!email.trim() || !password) {
-      setGeneralError('Harap isi email dan password.');
-      return;
-    }
-
+    setError('');
     setLoading(true);
 
     try {
-      await login(email, password);
-      showToast('Login berhasil! Selamat datang.', 'success');
-      navigate(from, { replace: true });
-    } catch (err) {
-      if (err.response) {
-        const { status, data } = err.response;
-
-        if (status === 422) {
-          // Validation error
-          setGeneralError(data.message || 'Validasi data gagal.');
-          if (data.errors) {
-            setFieldErrors(data.errors);
-          }
-        } else if (status === 429) {
-          // Throttled rate limit error
-          setRateLimitError(
-            data.message || 'Terlalu banyak percobaan login. Silakan tunggu 1 menit lalu coba kembali.'
-          );
-        } else if (status === 401) {
-          // Invalid credentials
-          setGeneralError(data.message || 'Email atau password yang Anda masukkan salah.');
-        } else {
-          setGeneralError(data.message || `Terjadi kesalahan (Kode: ${status}).`);
-        }
-      } else if (err.request) {
-        setGeneralError('Tidak dapat terhubung ke server API. Pastikan backend aktif.');
+      const res = await login(form.email, form.password);
+      if (res.success) {
+        navigate(from, { replace: true });
       } else {
-        setGeneralError('Terjadi kesalahan saat memproses login.');
+        setError(res.message || 'Email atau password salah.');
       }
+    } catch {
+      setError('Gagal terhubung ke server backend API.');
     } finally {
       setLoading(false);
     }
@@ -79,171 +41,194 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#0F172A',
-        padding: '20px',
-        backgroundImage: 'radial-gradient(ellipse at 50% 20%, rgba(79, 70, 229, 0.15) 0%, transparent 70%)',
+        background: 'var(--color-bg, #FAF6F0)',
+        padding: '24px',
+        position: 'relative',
       }}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '440px',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '16px',
+          maxWidth: '420px',
+          background: 'var(--color-surface, #FFFFFF)',
+          borderRadius: 'var(--radius-lg, 12px)',
           padding: '36px 32px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          boxShadow: 'var(--shadow-md)',
+          border: '1px solid var(--color-border, #E8D9C5)',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
-        {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div
             style={{
               width: '56px',
               height: '56px',
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-              display: 'inline-flex',
+              borderRadius: '12px',
+              background: 'var(--color-primary-subtle, #FDF0EA)',
+              display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '30px',
-              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
-              marginBottom: '14px',
+              margin: '0 auto 16px',
+              border: '1px solid var(--color-primary-light, #F5CEBC)',
             }}
           >
-            🥖
+            <Lock size={26} color="var(--color-primary, #D97748)" />
           </div>
-          <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#0F172A', margin: 0 }}>
-            Erles Bakery ERP
+          <h1
+            style={{
+              fontSize: '24px',
+              fontWeight: '700',
+              fontFamily: 'var(--font-display)',
+              color: 'var(--color-text, #3D2817)',
+              margin: '0 0 6px',
+            }}
+          >
+            Erles Bakery
           </h1>
-          <p style={{ fontSize: '13px', color: '#64748B', marginTop: '6px' }}>
-            Masuk ke panel manajemen admin & staff
+          <p
+            style={{
+              color: 'var(--color-text-secondary, #705847)',
+              fontSize: '14px',
+              margin: 0,
+            }}
+          >
+            Masuk ke Dashboard Admin Toko
           </p>
         </div>
 
-        {/* 429 Rate Limit Alert */}
-        {rateLimitError && (
+        {error && (
           <div
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
               padding: '12px 14px',
-              borderRadius: '8px',
-              backgroundColor: '#FFFBEB',
-              border: '1px solid #FDE68A',
-              color: '#92400E',
+              borderRadius: 'var(--radius-md, 8px)',
+              background: 'var(--color-danger-bg, #FEF2F2)',
+              border: '1px solid var(--color-danger-border, #FECACA)',
+              color: 'var(--color-danger-text, #991B1B)',
               fontSize: '13px',
               marginBottom: '20px',
-              display: 'flex',
-              gap: '10px',
-              alignItems: 'flex-start',
+              fontWeight: '500',
             }}
           >
-            <AlertTriangle size={18} color="#D97706" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div>
-              <div style={{ fontWeight: '600', marginBottom: '2px' }}>Akses Dibatasi (429)</div>
-              <div>{rateLimitError}</div>
-            </div>
+            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
           </div>
         )}
 
-        {/* General Error Alert */}
-        {generalError && (
-          <div
-            style={{
-              padding: '12px 14px',
-              borderRadius: '8px',
-              backgroundColor: '#FEF2F2',
-              border: '1px solid #FECACA',
-              color: '#991B1B',
-              fontSize: '13px',
-              marginBottom: '20px',
-              display: 'flex',
-              gap: '10px',
-              alignItems: 'flex-start',
-            }}
-          >
-            <AlertCircle size={18} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
-            <div>{generalError}</div>
-          </div>
-        )}
-
-        {/* Login Form */}
         <form onSubmit={handleSubmit}>
-          <FormField
-            label="Email"
-            required
-            error={fieldErrors.email}
-            htmlFor="email"
-          >
+          <div style={{ marginBottom: '18px' }}>
+            <label
+              htmlFor="email"
+              style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: 'var(--color-text, #3D2817)',
+                marginBottom: '6px',
+              }}
+            >
+              Email Admin
+            </label>
             <div style={{ position: 'relative' }}>
               <Mail
                 size={18}
                 style={{
                   position: 'absolute',
-                  left: '12px',
+                  left: '14px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#94A3B8',
+                  color: 'var(--color-text-secondary, #705847)',
                 }}
               />
               <input
                 id="email"
                 type="email"
+                required
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="admin@erlesbakery.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                disabled={loading}
                 style={{
                   width: '100%',
-                  padding: '10px 14px 10px 38px',
-                  borderRadius: '8px',
-                  border: fieldErrors.email ? '1px solid #DC2626' : '1px solid #CBD5E1',
+                  padding: '12px 14px 12px 42px',
+                  border: '1px solid var(--color-border, #E8D9C5)',
+                  borderRadius: 'var(--radius-md, 8px)',
                   fontSize: '14px',
-                  color: '#0F172A',
-                  outline: 'none',
+                  fontFamily: 'inherit',
+                  color: 'var(--color-text, #3D2817)',
+                  background: '#FFFFFF',
                   boxSizing: 'border-box',
                 }}
               />
             </div>
-          </FormField>
+          </div>
 
-          <FormField
-            label="Password"
-            required
-            error={fieldErrors.password}
-            htmlFor="password"
-          >
+          <div style={{ marginBottom: '24px' }}>
+            <label
+              htmlFor="password"
+              style={{
+                display: 'block',
+                fontSize: '13px',
+                fontWeight: '600',
+                color: 'var(--color-text, #3D2817)',
+                marginBottom: '6px',
+              }}
+            >
+              Password
+            </label>
             <div style={{ position: 'relative' }}>
               <Lock
                 size={18}
                 style={{
                   position: 'absolute',
-                  left: '12px',
+                  left: '14px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#94A3B8',
+                  color: 'var(--color-text-secondary, #705847)',
                 }}
               />
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                disabled={loading}
                 style={{
                   width: '100%',
-                  padding: '10px 14px 10px 38px',
-                  borderRadius: '8px',
-                  border: fieldErrors.password ? '1px solid #DC2626' : '1px solid #CBD5E1',
+                  padding: '12px 42px 12px 42px',
+                  border: '1px solid var(--color-border, #E8D9C5)',
+                  borderRadius: 'var(--radius-md, 8px)',
                   fontSize: '14px',
-                  color: '#0F172A',
-                  outline: 'none',
+                  fontFamily: 'inherit',
+                  color: 'var(--color-text, #3D2817)',
+                  background: '#FFFFFF',
                   boxSizing: 'border-box',
                 }}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-secondary, #705847)',
+                  padding: '4px',
+                  display: 'flex',
+                }}
+                aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-          </FormField>
+          </div>
 
           <button
             type="submit"
@@ -251,56 +236,42 @@ export default function LoginPage() {
             style={{
               width: '100%',
               padding: '12px',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-md, 8px)',
               border: 'none',
-              backgroundColor: '#4F46E5',
+              background: loading ? '#CBD5E1' : 'var(--color-primary, #D97748)',
               color: '#FFFFFF',
               fontSize: '14px',
               fontWeight: '600',
               cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.75 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              marginTop: '12px',
-              boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)',
+              transition: 'background var(--transition-fast)',
+              boxShadow: '0 2px 6px rgba(217, 119, 72, 0.25)',
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) e.currentTarget.style.background = 'var(--color-primary-hover, #C26336)';
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) e.currentTarget.style.background = 'var(--color-primary, #D97748)';
             }}
           >
-            {loading ? (
-              <>
-                <div
-                  style={{
-                    width: '16px',
-                    height: '16px',
-                    border: '2px solid rgba(255, 255, 255, 0.4)',
-                    borderTopColor: '#FFFFFF',
-                    borderRadius: '50%',
-                    animation: 'spin 0.6s linear infinite',
-                  }}
-                />
-                <span>Memproses...</span>
-              </>
-            ) : (
-              <>
-                <LogIn size={18} />
-                <span>Masuk ke Akun</span>
-              </>
-            )}
+            {loading ? 'Memverifikasi...' : 'Masuk ke Dashboard'}
           </button>
         </form>
 
         <div
           style={{
             marginTop: '24px',
-            paddingTop: '16px',
-            borderTop: '1px solid #F1F5F9',
-            textAlign: 'center',
+            padding: '12px 14px',
+            borderRadius: 'var(--radius-md, 8px)',
+            background: 'var(--color-bg, #FAF6F0)',
+            border: '1px solid var(--color-border-subtle, #F5EDE4)',
             fontSize: '12px',
-            color: '#64748B',
+            color: 'var(--color-text-secondary, #705847)',
+            lineHeight: '1.5',
           }}
         >
-          Masuk dengan akun admin atau staff yang telah terdaftar di database.
+          <strong>Kredensial Default (Seeder):</strong><br />
+          Email: <code style={{ color: 'var(--color-primary-dark, #9E471F)' }}>admin@erlesbakery.com</code><br />
+          Password: <code style={{ color: 'var(--color-primary-dark, #9E471F)' }}>password</code>
         </div>
       </div>
     </div>

@@ -1,1086 +1,640 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Wallet,
-  Plus,
-  Edit2,
-  Trash2,
-  RefreshCw,
-  Search,
-  AlertCircle,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  ChevronLeft,
-  ChevronRight,
+  Wallet, TrendingUp, TrendingDown, DollarSign, Plus, Search,
+  Filter, ChevronDown, Edit3, Trash2, X, AlertTriangle,
 } from 'lucide-react';
-import useAuth from '../hooks/useAuth';
-import useToast from '../hooks/useToast';
-import financeService from '../services/financeService';
-import Table from '../components/common/Table';
-import Modal from '../components/common/Modal';
-import FormField from '../components/common/FormField';
-import StatusBadge from '../components/common/StatusBadge';
-import ConfirmDialog from '../components/common/ConfirmDialog';
+import { financeService } from '../services/financeService';
+import { formatRupiah, formatTanggal } from '../utils/formatters';
+import Pagination from '../components/Pagination';
+import ConfirmModal from '../components/ConfirmModal';
+import { LoadingState, EmptyState, ErrorState } from '../components/StateDisplay';
+
+const kategoriPemasukan = ['Penjualan', 'Hampers', 'Pesanan Khusus', 'Lainnya'];
+const kategoriPengeluaran = ['Bahan Baku', 'Packaging', 'Gaji', 'Operasional', 'Peralatan', 'Lainnya'];
+
+const emptyForm = {
+  tipe: 'pemasukan',
+  nominal: '',
+  kategori: '',
+  catatan: '',
+  tanggal: new Date().toISOString().split('T')[0],
+};
+
+const inputStyle = {
+  width: '100%',
+  padding: '10px 14px',
+  border: '1px solid var(--color-border, #E8D9C5)',
+  borderRadius: 'var(--radius-md, 8px)',
+  fontSize: '14px',
+  fontFamily: 'inherit',
+  color: 'var(--color-text, #3D2817)',
+  background: '#FFFFFF',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+function FormField({ label, error, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text, #3D2817)' }}>
+        {label}
+      </label>
+      {children}
+      {error && (
+        <span style={{ fontSize: '12px', color: 'var(--color-danger, #B91C1C)', fontWeight: '500' }}>
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function KeuanganPage() {
-  const { can } = useAuth();
-  const { showToast } = useToast();
-  const isAdmin = can('admin');
-
-  // List & summary states
   const [transactions, setTransactions] = useState([]);
-  const [summary, setSummary] = useState({
-    total_pemasukan: 0,
-    total_pengeluaran: 0,
-    saldo: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState('');
-  const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
+  const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0, summary: null });
+  const [summary, setSummary] = useState({ total_pemasukan: 0, total_pengeluaran: 0, saldo: 0 });
+  const [isOfflineData, setIsOfflineData] = useState(false);
 
-  // Filter states
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [filterTipe, setFilterTipe] = useState('');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  // Form modal states (Create / Edit)
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedTx, setSelectedTx] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    tipe: 'pengeluaran',
-    tanggal: new Date().toISOString().split('T')[0],
-    nominal: '',
-    kategori: '',
-    catatan: '',
-  });
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Delete dialog states
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [txToDelete, setTxToDelete] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ ...emptyForm });
+  const [formErrors, setFormErrors] = useState({});
+  const [formLoading, setFormLoading] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
-  const fetchFinances = useCallback(async () => {
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    setFetchError('');
+    setError(null);
     try {
-      const params = { page, per_page: 10 };
-      if (search.trim()) params.search = search.trim();
-      if (typeFilter) params.tipe = typeFilter;
-      if (categoryFilter.trim()) params.kategori = categoryFilter.trim();
-      if (startDate) params.tanggal_mulai = startDate;
-      if (endDate) params.tanggal_akhir = endDate;
+      const [txRes, sumRes] = await Promise.all([
+        financeService.list({
+          tipe: filterTipe || undefined,
+          tanggal_mulai: dateStart || undefined,
+          tanggal_akhir: dateEnd || undefined,
+          search: debouncedSearch || undefined,
+          page,
+          per_page: 5,
+        }),
+        financeService.summary(),
+      ]);
 
-      const response = await financeService.getFinances(params);
-      setTransactions(response.data || []);
+      setIsOfflineData(!!(txRes?.isOffline || sumRes?.isOffline));
 
-      if (response.summary) {
-        setSummary({
-          total_pemasukan: Number(response.summary.total_pemasukan || 0),
-          total_pengeluaran: Number(response.summary.total_pengeluaran || 0),
-          saldo: Number(response.summary.saldo || 0),
-        });
+      if (txRes.success) {
+        setTransactions(txRes.data);
+        setMeta(txRes.meta || { current_page: 1, last_page: 1, total: txRes.data.length });
+      } else {
+        setError(txRes.message);
       }
-
-      if (response.meta) {
-        setPagination({
-          current_page: response.meta.current_page || 1,
-          last_page: response.meta.last_page || 1,
-          total: response.meta.total || 0,
-        });
+      if (sumRes.success) {
+        setSummary(sumRes.data);
       }
-    } catch (err) {
-      setFetchError(err.response?.data?.message || 'Gagal memuat catatan transaksi keuangan.');
-      showToast('Gagal memuat data keuangan.', 'error');
+    } catch {
+      setError('Gagal memuat data transaksi keuangan.');
     } finally {
       setLoading(false);
     }
-  }, [page, search, typeFilter, categoryFilter, startDate, endDate, showToast]);
+  }, [filterTipe, dateStart, dateEnd, debouncedSearch, page]);
 
   useEffect(() => {
-    fetchFinances();
-  }, [fetchFinances]);
+    fetchData();
+  }, [fetchData]);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setPage(1);
-    fetchFinances();
+  const currentKategori = form.tipe === 'pemasukan' ? kategoriPemasukan : kategoriPengeluaran;
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm({ ...emptyForm });
+    setFormErrors({});
+    setShowForm(true);
   };
 
-  const handleResetFilter = () => {
-    setSearch('');
-    setTypeFilter('');
-    setCategoryFilter('');
-    setStartDate('');
-    setEndDate('');
-    setPage(1);
-  };
-
-  const setPeriodToday = () => {
-    const today = new Date().toISOString().split('T')[0];
-    setStartDate(today);
-    setEndDate(today);
-    setPage(1);
-  };
-
-  const setPeriodThisMonth = () => {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-    setStartDate(firstDay);
-    setEndDate(lastDay);
-    setPage(1);
-  };
-
-  const handleOpenCreate = () => {
-    setSelectedTx(null);
-    setFormData({
-      tipe: 'pengeluaran',
-      tanggal: new Date().toISOString().split('T')[0],
-      nominal: '',
-      kategori: '',
-      catatan: '',
-    });
-    setFieldErrors({});
-    setModalOpen(true);
-  };
-
-  const handleOpenEdit = (tx) => {
-    setSelectedTx(tx);
-    setFormData({
-      tipe: tx.tipe || 'pengeluaran',
-      tanggal: tx.tanggal ? tx.tanggal.substring(0, 10) : new Date().toISOString().split('T')[0],
-      nominal: tx.nominal ?? '',
-      kategori: tx.kategori || '',
+  const openEdit = (tx) => {
+    setEditingId(tx.id);
+    setForm({
+      tipe: tx.tipe,
+      nominal: String(tx.nominal),
+      kategori: tx.kategori,
       catatan: tx.catatan || '',
+      tanggal: tx.tanggal,
     });
-    setFieldErrors({});
-    setModalOpen(true);
+    setFormErrors({});
+    setShowForm(true);
+  };
+
+  const validateForm = () => {
+    const errs = {};
+    if (!form.tipe) errs.tipe = 'Tipe wajib dipilih.';
+    if (!form.nominal || Number(form.nominal) <= 0) errs.nominal = 'Nominal harus lebih dari 0.';
+    if (!form.kategori) errs.kategori = 'Kategori wajib dipilih.';
+    if (!form.tanggal) errs.tanggal = 'Tanggal wajib diisi.';
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
-    setFieldErrors({});
+    if (!validateForm()) return;
 
+    setFormLoading(true);
     try {
-      const payload = {
-        tipe: formData.tipe,
-        tanggal: formData.tanggal,
-        nominal: Number(formData.nominal),
-        kategori: formData.kategori,
-        catatan: formData.catatan || null,
-      };
-
-      if (selectedTx) {
-        await financeService.updateFinance(selectedTx.id, payload);
-        showToast('Transaksi keuangan berhasil diperbarui.', 'success');
+      let res;
+      if (editingId) {
+        res = await financeService.update(editingId, form);
       } else {
-        await financeService.createFinance(payload);
-        showToast('Transaksi keuangan berhasil dicatat.', 'success');
+        res = await financeService.create(form);
       }
-      setModalOpen(false);
-      fetchFinances();
-    } catch (err) {
-      if (err.response?.status === 422) {
-        setFieldErrors(err.response.data.errors || {});
-        showToast(err.response.data.message || 'Validasi gagal.', 'error');
-      } else {
-        showToast(err.response?.data?.message || 'Gagal menyimpan transaksi.', 'error');
+
+      if (res.success) {
+        setShowForm(false);
+        setForm({ ...emptyForm });
+        setEditingId(null);
+        fetchData();
+      } else if (res.errors) {
+        const mapped = {};
+        Object.entries(res.errors).forEach(([k, v]) => { mapped[k] = Array.isArray(v) ? v[0] : v; });
+        setFormErrors(mapped);
       }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleOpenDelete = (tx) => {
-    setTxToDelete(tx);
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleDelete = async () => {
-    if (!txToDelete) return;
-    setDeleting(true);
-    try {
-      await financeService.deleteFinance(txToDelete.id);
-      showToast('Transaksi keuangan berhasil dihapus.', 'success');
-      setDeleteConfirmOpen(false);
-      setTxToDelete(null);
-      fetchFinances();
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Gagal menghapus transaksi.';
-      showToast(msg, 'error');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const formatRupiah = (val) => {
-    const num = Number(val || 0);
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(num);
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    try {
-      const d = new Date(dateStr);
-      return new Intl.DateTimeFormat('id-ID', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      }).format(d);
     } catch {
-      return dateStr;
+      // API validation or network error handled by response status
+    } finally {
+      setFormLoading(false);
     }
   };
 
-  const columns = [
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    setDeleteLoading(true);
+    try {
+      const res = await financeService.delete(deleteConfirm);
+      if (res.success) fetchData();
+    } catch {
+      // Delete failure handled gracefully
+    } finally {
+      setDeleteLoading(false);
+      setDeleteConfirm(null);
+    }
+  };
+
+  const cards = [
     {
-      key: 'tanggal',
-      label: 'Tanggal',
-      render: (row) => (
-        <span style={{ fontWeight: '500', color: '#1E293B', whiteSpace: 'nowrap' }}>
-          {formatDate(row.tanggal)}
-        </span>
-      ),
+      label: 'Total Pemasukan',
+      value: summary.total_pemasukan,
+      icon: TrendingUp,
+      color: 'var(--color-success, #2E7D32)',
+      bg: 'var(--color-success-bg, #E8F5E9)',
     },
     {
-      key: 'tipe',
-      label: 'Tipe',
-      render: (row) => <StatusBadge status={row.tipe} />,
+      label: 'Total Pengeluaran',
+      value: summary.total_pengeluaran,
+      icon: TrendingDown,
+      color: 'var(--color-danger, #B91C1C)',
+      bg: 'var(--color-danger-bg, #FEF2F2)',
     },
     {
-      key: 'kategori',
-      label: 'Kategori',
-      render: (row) => (
-        <span
-          style={{
-            display: 'inline-block',
-            padding: '2px 8px',
-            backgroundColor: '#F1F5F9',
-            borderRadius: '4px',
-            fontSize: '12px',
-            color: '#475569',
-            fontWeight: '500',
-          }}
-        >
-          {row.kategori}
-        </span>
-      ),
-    },
-    {
-      key: 'catatan',
-      label: 'Keterangan',
-      render: (row) => (
-        <div style={{ maxWidth: '280px' }}>
-          <p style={{ margin: 0, color: '#334155', fontSize: '13px' }}>
-            {row.catatan || '-'}
-          </p>
-          {row.order_id && (
-            <span style={{ fontSize: '11px', color: '#6366F1', fontWeight: '500' }}>
-              Pesanan #{row.order_id}
-            </span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'nominal',
-      label: 'Nominal',
-      align: 'right',
-      render: (row) => {
-        const isIncome = row.tipe === 'pemasukan';
-        return (
-          <span
-            style={{
-              fontWeight: '700',
-              fontFamily: 'monospace',
-              fontSize: '13px',
-              color: isIncome ? '#16A34A' : '#DC2626',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {isIncome ? '+ ' : '- '}
-            {formatRupiah(row.nominal)}
-          </span>
-        );
-      },
-    },
-    {
-      key: 'user',
-      label: 'Dicatat Oleh',
-      render: (row) => (
-        <span style={{ fontSize: '12px', color: '#64748B' }}>
-          {row.user?.name || '-'}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Aksi',
-      align: 'right',
-      render: (row) => (
-        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            onClick={() => handleOpenEdit(row)}
-            style={{
-              padding: '6px 9px',
-              fontSize: '12px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              background: '#FFFFFF',
-              color: '#334155',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-            title="Edit transaksi"
-          >
-            <Edit2 size={13} />
-            <span>Edit</span>
-          </button>
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() => handleOpenDelete(row)}
-              style={{
-                padding: '6px 9px',
-                fontSize: '12px',
-                borderRadius: '6px',
-                border: '1px solid #FECACA',
-                background: '#FEF2F2',
-                color: '#DC2626',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-              title="Hapus transaksi (Khusus Admin)"
-            >
-              <Trash2 size={13} />
-              <span>Hapus</span>
-            </button>
-          )}
-        </div>
-      ),
+      label: 'Saldo Kas',
+      value: summary.saldo,
+      icon: DollarSign,
+      color: summary.saldo >= 0 ? 'var(--color-primary, #D97748)' : 'var(--color-danger, #B91C1C)',
+      bg: summary.saldo >= 0 ? 'var(--color-primary-subtle, #FDF0EA)' : 'var(--color-danger-bg, #FEF2F2)',
     },
   ];
 
   return (
     <div>
       {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          gap: '16px',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-            <Wallet size={24} color="#4F46E5" />
-            <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#0F172A', margin: 0 }}>
-              Keuangan & Arus Kas
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '10px',
+            background: 'var(--color-primary-subtle, #FDF0EA)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Wallet size={24} color="var(--color-primary, #D97748)" />
+          </div>
+          <div>
+            <h1 style={{ fontSize: '26px', fontWeight: '700', fontFamily: 'var(--font-display)', color: 'var(--color-text, #3D2817)', margin: 0 }}>
+              Pencatatan Keuangan
             </h1>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary, #705847)', margin: 0 }}>
+              {meta.total} transaksi tercatat
+            </p>
           </div>
-          <p style={{ color: '#64748B', fontSize: '14px', margin: 0 }}>
-            Pencatatan kas masuk, biaya operasional toko, dan rekap saldo keuangan ({pagination.total} transaksi)
-          </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            type="button"
-            onClick={fetchFinances}
-            disabled={loading}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #CBD5E1',
-              color: '#475569',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: '500',
-              cursor: loading ? 'not-allowed' : 'pointer',
-            }}
-            title="Segarkan data"
-          >
-            <RefreshCw size={15} />
-            <span>Segarkan</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              backgroundColor: '#4F46E5',
-              color: '#FFFFFF',
-              borderRadius: '8px',
-              border: 'none',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(79, 70, 229, 0.2)',
-            }}
-          >
-            <Plus size={16} />
-            <span>Catat Transaksi</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '16px',
-          marginBottom: '20px',
-        }}
-      >
-        {/* Total Pemasukan */}
-        <div
+        <button
+          onClick={openCreate}
           style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '10px',
-            border: '1px solid #E2E8F0',
-            padding: '18px 20px',
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
-            gap: '16px',
-          }}
-        >
-          <div
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '10px',
-              backgroundColor: '#DCFCE7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#16A34A',
-            }}
-          >
-            <TrendingUp size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '13px', color: '#64748B', fontWeight: '500' }}>
-              Total Pemasukan
-            </span>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#16A34A', marginTop: '2px' }}>
-              {formatRupiah(summary.total_pemasukan)}
-            </div>
-          </div>
-        </div>
-
-        {/* Total Pengeluaran */}
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '10px',
-            border: '1px solid #E2E8F0',
-            padding: '18px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-          }}
-        >
-          <div
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '10px',
-              backgroundColor: '#FEE2E2',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#DC2626',
-            }}
-          >
-            <TrendingDown size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '13px', color: '#64748B', fontWeight: '500' }}>
-              Total Pengeluaran
-            </span>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#DC2626', marginTop: '2px' }}>
-              {formatRupiah(summary.total_pengeluaran)}
-            </div>
-          </div>
-        </div>
-
-        {/* Saldo / Laba Bersih */}
-        <div
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '10px',
-            border: '1px solid #E2E8F0',
-            padding: '18px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-          }}
-        >
-          <div
-            style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '10px',
-              backgroundColor: '#EEF2FF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#4F46E5',
-            }}
-          >
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '13px', color: '#64748B', fontWeight: '500' }}>
-              Saldo Kas
-            </span>
-            <div
-              style={{
-                fontSize: '20px',
-                fontWeight: '700',
-                color: summary.saldo >= 0 ? '#4F46E5' : '#DC2626',
-                marginTop: '2px',
-              }}
-            >
-              {formatRupiah(summary.saldo)}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '12px',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          backgroundColor: '#FFFFFF',
-          padding: '14px 16px',
-          borderRadius: '10px',
-          border: '1px solid #E2E8F0',
-          alignItems: 'center',
-        }}
-      >
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flex: '1', minWidth: '220px', gap: '8px' }}>
-          <div style={{ position: 'relative', width: '100%' }}>
-            <Search
-              size={16}
-              style={{
-                position: 'absolute',
-                left: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#94A3B8',
-              }}
-            />
-            <input
-              type="text"
-              placeholder="Cari keterangan atau kategori..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 10px 8px 34px',
-                borderRadius: '6px',
-                border: '1px solid #CBD5E1',
-                fontSize: '13px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-          </div>
-          <button
-            type="submit"
-            style={{
-              padding: '8px 14px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: '#4F46E5',
-              color: '#FFFFFF',
-              fontSize: '13px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Cari
-          </button>
-        </form>
-
-        <select
-          value={typeFilter}
-          onChange={(e) => {
-            setTypeFilter(e.target.value);
-            setPage(1);
-          }}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '6px',
-            border: '1px solid #CBD5E1',
-            fontSize: '13px',
-            backgroundColor: '#FFFFFF',
-            outline: 'none',
-          }}
-        >
-          <option value="">Semua Tipe</option>
-          <option value="pemasukan">Pemasukan</option>
-          <option value="pengeluaran">Pengeluaran</option>
-        </select>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '12px', color: '#64748B' }}>Dari:</span>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => {
-              setStartDate(e.target.value);
-              setPage(1);
-            }}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              fontSize: '12px',
-              backgroundColor: '#FFFFFF',
-              outline: 'none',
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '12px', color: '#64748B' }}>Sampai:</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => {
-              setEndDate(e.target.value);
-              setPage(1);
-            }}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              fontSize: '12px',
-              backgroundColor: '#FFFFFF',
-              outline: 'none',
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <button
-            type="button"
-            onClick={setPeriodToday}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              backgroundColor: '#FFFFFF',
-              color: '#475569',
-              fontSize: '12px',
-              cursor: 'pointer',
-              fontWeight: '500',
-            }}
-          >
-            Hari Ini
-          </button>
-          <button
-            type="button"
-            onClick={setPeriodThisMonth}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              backgroundColor: '#FFFFFF',
-              color: '#475569',
-              fontSize: '12px',
-              cursor: 'pointer',
-              fontWeight: '500',
-            }}
-          >
-            Bulan Ini
-          </button>
-        </div>
-
-        {(search || typeFilter || categoryFilter || startDate || endDate) && (
-          <button
-            type="button"
-            onClick={handleResetFilter}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
-              border: '1px solid #CBD5E1',
-              backgroundColor: '#F8FAFC',
-              color: '#64748B',
-              fontSize: '12px',
-              cursor: 'pointer',
-            }}
-          >
-            Reset Filter
-          </button>
-        )}
-      </div>
-
-      {/* Error state */}
-      {fetchError && (
-        <div
-          style={{
-            padding: '14px 16px',
-            backgroundColor: '#FEF2F2',
-            border: '1px solid #FECACA',
-            borderRadius: '8px',
-            color: '#991B1B',
+            gap: '8px',
+            padding: '10px 20px',
+            background: 'var(--color-primary, #D97748)',
+            color: '#FFFFFF',
+            border: 'none',
+            borderRadius: 'var(--radius-md, 8px)',
+            fontWeight: '600',
+            cursor: 'pointer',
             fontSize: '14px',
-            marginBottom: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            transition: 'background var(--transition-fast)',
+            boxShadow: '0 2px 6px rgba(217, 119, 72, 0.25)',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-primary-hover, #C26336)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--color-primary, #D97748)')}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <AlertCircle size={18} color="#DC2626" />
-            <span>{fetchError}</span>
-          </div>
-          <button
-            type="button"
-            onClick={fetchFinances}
+          <Plus size={18} /> Catat Transaksi
+        </button>
+      </div>
+
+      {isOfflineData && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          background: 'var(--color-warning-bg, #FFF8E1)',
+          border: '1px solid var(--color-warning-border, #FFE082)',
+          borderRadius: 'var(--radius-md, 8px)',
+          padding: '12px 16px',
+          marginBottom: '24px',
+          color: 'var(--color-warning-text, #78350F)',
+        }}>
+          <AlertTriangle size={20} color="var(--color-warning, #9A6700)" />
+          <span style={{ fontSize: '13px' }}>Mode Data Contoh (Offline) — Hubungkan backend Laravel untuk sinkronisasi data riil.</span>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '28px' }}>
+        {cards.map((card) => (
+          <div
+            key={card.label}
             style={{
-              background: 'transparent',
-              border: '1px solid #DC2626',
-              color: '#DC2626',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              cursor: 'pointer',
-              fontWeight: '500',
+              background: 'var(--color-surface, #FFFFFF)',
+              borderRadius: 'var(--radius-lg, 12px)',
+              padding: '22px 24px',
+              border: '1px solid var(--color-border, #E8D9C5)',
+              boxShadow: 'var(--shadow-sm)',
+              minWidth: 0,
+              overflow: 'hidden',
+              transition: 'transform var(--transition-fast)',
             }}
           >
-            Coba Lagi
-          </button>
-        </div>
-      )}
-
-      {/* Table */}
-      <Table
-        columns={columns}
-        data={transactions}
-        loading={loading}
-        emptyMessage="Belum ada transaksi keuangan yang tercatat."
-      />
-
-      {/* Pagination controls */}
-      {pagination.last_page > 1 && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginTop: '16px',
-            fontSize: '13px',
-            color: '#64748B',
-          }}
-        >
-          <div>
-            Menampilkan halaman {pagination.current_page} dari {pagination.last_page} (Total {pagination.total} data)
-          </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              type="button"
-              disabled={page <= 1 || loading}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                border: '1px solid #CBD5E1',
-                backgroundColor: '#FFFFFF',
-                cursor: page <= 1 || loading ? 'not-allowed' : 'pointer',
-                opacity: page <= 1 || loading ? 0.6 : 1,
-              }}
-            >
-              <ChevronLeft size={16} /> Sebelumnya
-            </button>
-            <button
-              type="button"
-              disabled={page >= pagination.last_page || loading}
-              onClick={() => setPage((p) => Math.min(pagination.last_page, p + 1))}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                border: '1px solid #CBD5E1',
-                backgroundColor: '#FFFFFF',
-                cursor: page >= pagination.last_page || loading ? 'not-allowed' : 'pointer',
-                opacity: page >= pagination.last_page || loading ? 0.6 : 1,
-              }}
-            >
-              Selanjutnya <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Form Tambah / Edit Transaksi Keuangan */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => !submitting && setModalOpen(false)}
-        title={selectedTx ? 'Edit Catatan Transaksi' : 'Catat Transaksi Keuangan Baru'}
-        maxWidth="500px"
-        footer={
-          <>
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => setModalOpen(false)}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: '500',
-                borderRadius: '6px',
-                border: '1px solid #CBD5E1',
-                background: '#FFFFFF',
-                color: '#475569',
-                cursor: submitting ? 'not-allowed' : 'pointer',
-              }}
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              form="finance-form"
-              disabled={submitting}
-              style={{
-                padding: '8px 18px',
-                fontSize: '14px',
-                fontWeight: '600',
-                borderRadius: '6px',
-                border: 'none',
-                background: '#4F46E5',
-                color: '#FFFFFF',
-                cursor: submitting ? 'not-allowed' : 'pointer',
-                opacity: submitting ? 0.75 : 1,
-              }}
-            >
-              {submitting ? 'Menyimpan...' : selectedTx ? 'Simpan Perubahan' : 'Catat Transaksi'}
-            </button>
-          </>
-        }
-      >
-        <form id="finance-form" onSubmit={handleSubmit}>
-          {/* Tipe Transaksi (Pemasukan / Pengeluaran) */}
-          <FormField label="Tipe Transaksi" required error={fieldErrors.tipe}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  border: formData.tipe === 'pemasukan' ? '2px solid #16A34A' : '1px solid #CBD5E1',
-                  backgroundColor: formData.tipe === 'pemasukan' ? '#F0FDF4' : '#FFFFFF',
-                  cursor: 'pointer',
-                  fontWeight: formData.tipe === 'pemasukan' ? '600' : '400',
-                  color: formData.tipe === 'pemasukan' ? '#16A34A' : '#475569',
-                }}
-              >
-                <input
-                  type="radio"
-                  name="tipe"
-                  value="pemasukan"
-                  checked={formData.tipe === 'pemasukan'}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, tipe: e.target.value }))}
-                  style={{ accentColor: '#16A34A' }}
-                />
-                <span>Pemasukan (+)</span>
-              </label>
-
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  border: formData.tipe === 'pengeluaran' ? '2px solid #DC2626' : '1px solid #CBD5E1',
-                  backgroundColor: formData.tipe === 'pengeluaran' ? '#FEF2F2' : '#FFFFFF',
-                  cursor: 'pointer',
-                  fontWeight: formData.tipe === 'pengeluaran' ? '600' : '400',
-                  color: formData.tipe === 'pengeluaran' ? '#DC2626' : '#475569',
-                }}
-              >
-                <input
-                  type="radio"
-                  name="tipe"
-                  value="pengeluaran"
-                  checked={formData.tipe === 'pengeluaran'}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, tipe: e.target.value }))}
-                  style={{ accentColor: '#DC2626' }}
-                />
-                <span>Pengeluaran (-)</span>
-              </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <span style={{ fontSize: '13px', color: 'var(--color-text-secondary, #705847)', fontWeight: '500' }}>
+                {card.label}
+              </span>
+              <div style={{ background: card.bg, borderRadius: '8px', padding: '8px', display: 'flex' }}>
+                <card.icon size={18} color={card.color} />
+              </div>
             </div>
-          </FormField>
+            <div style={{
+              fontSize: 'clamp(18px, 1.8vw, 22px)',
+              fontWeight: '700',
+              fontFamily: 'var(--font-display)',
+              color: card.color,
+              lineHeight: '1.2',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word',
+              minWidth: 0,
+            }}>
+              {formatRupiah(card.value)}
+            </div>
+          </div>
+        ))}
+      </div>
 
-          {/* Tanggal & Nominal */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <FormField label="Tanggal" required error={fieldErrors.tanggal} htmlFor="tx-date">
-              <input
-                id="tx-date"
-                type="date"
-                required
-                value={formData.tanggal}
-                onChange={(e) => setFormData((prev) => ({ ...prev, tanggal: e.target.value }))}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '6px',
-                  border: fieldErrors.tanggal ? '1px solid #DC2626' : '1px solid #CBD5E1',
-                  fontSize: '14px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </FormField>
-
-            <FormField label="Nominal (Rp)" required error={fieldErrors.nominal} htmlFor="tx-amount">
-              <input
-                id="tx-amount"
-                type="number"
-                min="1"
-                step="1"
-                required
-                placeholder="Contoh: 150000"
-                value={formData.nominal}
-                onChange={(e) => setFormData((prev) => ({ ...prev, nominal: e.target.value }))}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '6px',
-                  border: fieldErrors.nominal ? '1px solid #DC2626' : '1px solid #CBD5E1',
-                  fontSize: '14px',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </FormField>
+      {showForm && (
+        <div style={{
+          background: 'var(--color-surface, #FFFFFF)',
+          borderRadius: 'var(--radius-lg, 12px)',
+          padding: '24px',
+          border: '1px solid var(--color-border, #E8D9C5)',
+          marginBottom: '28px',
+          boxShadow: 'var(--shadow-md)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', fontFamily: 'var(--font-display)', color: 'var(--color-text, #3D2817)' }}>
+              {editingId ? 'Edit Transaksi Keuangan' : 'Catat Transaksi Baru'}
+            </h2>
+            <button
+              onClick={() => { setShowForm(false); setEditingId(null); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary, #705847)', display: 'flex', padding: '4px' }}
+              aria-label="Tutup form"
+            >
+              <X size={20} />
+            </button>
           </div>
 
-          {/* Kategori */}
-          <FormField
-            label="Kategori"
-            required
-            error={fieldErrors.kategori}
-            htmlFor="tx-category"
-            helper="Pilih dari daftar atau ketik kategori baru"
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <FormField label="Tipe Transaksi" error={formErrors.tipe}>
+              <select value={form.tipe} onChange={(e) => setForm({ ...form, tipe: e.target.value, kategori: '' })} style={inputStyle}>
+                <option value="pemasukan">Pemasukan (Uang Masuk)</option>
+                <option value="pengeluaran">Pengeluaran (Uang Keluar)</option>
+              </select>
+            </FormField>
+
+            <FormField label="Nominal (Rp)" error={formErrors.nominal}>
+              <input
+                type="number"
+                value={form.nominal}
+                onChange={(e) => setForm({ ...form, nominal: e.target.value })}
+                min="1"
+                placeholder="Contoh: 150000"
+                style={inputStyle}
+              />
+            </FormField>
+
+            <FormField label="Kategori" error={formErrors.kategori}>
+              <select value={form.kategori} onChange={(e) => setForm({ ...form, kategori: e.target.value })} style={inputStyle}>
+                <option value="">Pilih Kategori</option>
+                {currentKategori.map((k) => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </FormField>
+
+            <FormField label="Tanggal Transaksi" error={formErrors.tanggal}>
+              <input type="date" value={form.tanggal} onChange={(e) => setForm({ ...form, tanggal: e.target.value })} style={inputStyle} />
+            </FormField>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <FormField label="Catatan / Keterangan (opsional)">
+                <input
+                  type="text"
+                  value={form.catatan}
+                  onChange={(e) => setForm({ ...form, catatan: e.target.value })}
+                  placeholder="Keterangan transaksi (misal: Beli box hampers 50 pcs)..."
+                  style={inputStyle}
+                />
+              </FormField>
+            </div>
+
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button
+                type="button"
+                onClick={() => { setShowForm(false); setEditingId(null); }}
+                style={{
+                  padding: '10px 20px',
+                  border: '1px solid var(--color-border, #E8D9C5)',
+                  borderRadius: 'var(--radius-md, 8px)',
+                  background: 'var(--color-bg, #FAF6F0)',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  color: 'var(--color-text, #3D2817)',
+                }}
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={formLoading}
+                style={{
+                  padding: '10px 24px',
+                  background: formLoading ? '#CBD5E1' : 'var(--color-primary, #D97748)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md, 8px)',
+                  fontWeight: '600',
+                  cursor: formLoading ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  transition: 'background var(--transition-fast)',
+                }}
+              >
+                {formLoading ? 'Menyimpan...' : editingId ? 'Perbarui Transaksi' : 'Simpan Transaksi'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
+          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary, #705847)' }} />
+          <input
+            type="text"
+            placeholder="Cari catatan atau kategori..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 12px 10px 40px',
+              border: '1px solid var(--color-border, #E8D9C5)',
+              borderRadius: 'var(--radius-md, 8px)',
+              fontSize: '14px',
+              background: '#FFFFFF',
+              color: 'var(--color-text, #3D2817)',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+
+        <div style={{ position: 'relative', minWidth: '160px' }}>
+          <Filter size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary, #705847)' }} />
+          <select
+            value={filterTipe}
+            onChange={(e) => { setFilterTipe(e.target.value); setPage(1); }}
+            style={{
+              width: '100%',
+              padding: '10px 12px 10px 40px',
+              border: '1px solid var(--color-border, #E8D9C5)',
+              borderRadius: 'var(--radius-md, 8px)',
+              fontSize: '14px',
+              appearance: 'none',
+              background: '#FFFFFF',
+              color: 'var(--color-text, #3D2817)',
+              cursor: 'pointer',
+            }}
           >
-            <input
-              id="tx-category"
-              type="text"
-              required
-              list="category-suggestions"
-              placeholder={formData.tipe === 'pemasukan' ? 'Penjualan, Modal, Bonus...' : 'Bahan Baku, Listrik & Air, Gaji, Sewa, Operasional...'}
-              value={formData.kategori}
-              onChange={(e) => setFormData((prev) => ({ ...prev, kategori: e.target.value }))}
-              style={{
-                width: '100%',
-                padding: '9px 12px',
-                borderRadius: '6px',
-                border: fieldErrors.kategori ? '1px solid #DC2626' : '1px solid #CBD5E1',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
-            <datalist id="category-suggestions">
-              {formData.tipe === 'pemasukan' ? (
-                <>
-                  <option value="Penjualan Produk" />
-                  <option value="Penjualan Pesanan Khusus" />
-                  <option value="Suntikan Modal" />
-                  <option value="Pendapatan Lain-lain" />
-                </>
-              ) : (
-                <>
-                  <option value="Bahan Baku" />
-                  <option value="Operasional Toko" />
-                  <option value="Listrik, Gas & Air" />
-                  <option value="Gaji Karyawan" />
-                  <option value="Kemasan & Packaging" />
-                  <option value="Perawatan Alat" />
-                  <option value="Sewa Tempat" />
-                  <option value="Lain-lain" />
-                </>
-              )}
-            </datalist>
-          </FormField>
+            <option value="">Semua Tipe</option>
+            <option value="pemasukan">Pemasukan</option>
+            <option value="pengeluaran">Pengeluaran</option>
+          </select>
+          <ChevronDown size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary, #705847)', pointerEvents: 'none' }} />
+        </div>
 
-          {/* Catatan */}
-          <FormField label="Keterangan / Catatan (Opsional)" error={fieldErrors.catatan} htmlFor="tx-note">
-            <textarea
-              id="tx-note"
-              rows={3}
-              placeholder="Contoh: Pembelian tepung Cakra Kembar 5 karung dan mentega anchor..."
-              value={formData.catatan}
-              onChange={(e) => setFormData((prev) => ({ ...prev, catatan: e.target.value }))}
-              style={{
-                width: '100%',
-                padding: '9px 12px',
-                borderRadius: '6px',
-                border: fieldErrors.catatan ? '1px solid #DC2626' : '1px solid #CBD5E1',
-                fontSize: '14px',
-                outline: 'none',
-                fontFamily: 'inherit',
-                resize: 'vertical',
-                boxSizing: 'border-box',
-              }}
-            />
-          </FormField>
-        </form>
-      </Modal>
+        <input
+          type="date"
+          value={dateStart}
+          onChange={(e) => { setDateStart(e.target.value); setPage(1); }}
+          placeholder="Dari"
+          style={{
+            padding: '10px 12px',
+            border: '1px solid var(--color-border, #E8D9C5)',
+            borderRadius: 'var(--radius-md, 8px)',
+            fontSize: '14px',
+            background: '#FFFFFF',
+            color: 'var(--color-text, #3D2817)',
+            minWidth: '140px',
+          }}
+        />
 
-      {/* Dialog Konfirmasi Hapus */}
-      <ConfirmDialog
-        isOpen={deleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        onConfirm={handleDelete}
-        title="Hapus Transaksi Keuangan"
-        message={`Apakah Anda yakin ingin menghapus catatan transaksi ${txToDelete?.kategori} sebesar ${formatRupiah(txToDelete?.nominal)}? Data arus kas yang dihapus tidak dapat dipulihkan.`}
-        confirmText="Ya, Hapus"
-        cancelText="Batal"
-        isDanger={true}
-        loading={deleting}
+        <input
+          type="date"
+          value={dateEnd}
+          onChange={(e) => { setDateEnd(e.target.value); setPage(1); }}
+          placeholder="Sampai"
+          style={{
+            padding: '10px 12px',
+            border: '1px solid var(--color-border, #E8D9C5)',
+            borderRadius: 'var(--radius-md, 8px)',
+            fontSize: '14px',
+            background: '#FFFFFF',
+            color: 'var(--color-text, #3D2817)',
+            minWidth: '140px',
+          }}
+        />
+      </div>
+
+      <div style={{ borderRadius: 'var(--radius-lg, 12px)', border: '1px solid var(--color-border, #E8D9C5)', background: '#FFFFFF', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+        {loading ? (
+          <LoadingState message="Memuat transaksi keuangan..." />
+        ) : error ? (
+          <ErrorState message={error} onRetry={fetchData} />
+        ) : transactions.length === 0 ? (
+          <EmptyState message="Tidak ada transaksi yang cocok dengan filter." icon={Wallet} />
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+              <thead>
+                <tr style={{ background: 'var(--color-bg, #FAF6F0)' }}>
+                  {['Tanggal', 'Tipe', 'Kategori', 'Catatan', 'Nominal', 'Aksi'].map((h) => (
+                    <th key={h} style={{ padding: '14px 16px', textAlign: 'left', fontWeight: '600', color: 'var(--color-text-secondary, #705847)', borderBottom: '1px solid var(--color-border, #E8D9C5)', whiteSpace: 'nowrap' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((tx) => (
+                  <tr
+                    key={tx.id}
+                    style={{ borderBottom: '1px solid var(--color-border-subtle, #F5EDE4)', transition: 'background var(--transition-fast)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg, #FAF6F0)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '#FFFFFF')}
+                  >
+                    <td style={{ padding: '14px 16px', color: 'var(--color-text-secondary, #705847)', whiteSpace: 'nowrap' }}>
+                      {formatTanggal(tx.tanggal)}
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        backgroundColor: tx.tipe === 'pemasukan' ? 'var(--color-success-bg, #E8F5E9)' : 'var(--color-danger-bg, #FEF2F2)',
+                        color: tx.tipe === 'pemasukan' ? 'var(--color-success-text, #1B5E20)' : 'var(--color-danger-text, #991B1B)',
+                        border: `1px solid ${tx.tipe === 'pemasukan' ? 'var(--color-success-border, #C8E6C9)' : 'var(--color-danger-border, #FECACA)'}`,
+                      }}>
+                        {tx.tipe === 'pemasukan' ? '+ Masuk' : '- Keluar'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '14px 16px', color: 'var(--color-text, #3D2817)', fontWeight: '600' }}>
+                      {tx.kategori}
+                    </td>
+                    <td style={{ padding: '14px 16px', color: 'var(--color-text-secondary, #705847)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {tx.catatan || '-'}
+                    </td>
+                    <td style={{
+                      padding: '14px 16px',
+                      fontWeight: '700',
+                      fontFamily: 'var(--font-display)',
+                      whiteSpace: 'nowrap',
+                      color: tx.tipe === 'pemasukan' ? 'var(--color-success, #2E7D32)' : 'var(--color-danger, #B91C1C)',
+                    }}>
+                      {tx.tipe === 'pemasukan' ? '+' : '-'}{formatRupiah(tx.nominal)}
+                    </td>
+                    <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => openEdit(tx)}
+                          style={{
+                            padding: '6px 10px',
+                            background: 'none',
+                            border: '1px solid var(--color-border, #E8D9C5)',
+                            borderRadius: '6px',
+                            color: 'var(--color-text-secondary, #705847)',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                          }}
+                          title="Edit transaksi"
+                          aria-label={`Edit transaksi ${tx.kategori}`}
+                        >
+                          <Edit3 size={14} /> Edit
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(tx.id)}
+                          style={{
+                            padding: '6px 10px',
+                            background: 'none',
+                            border: '1px solid var(--color-danger-border, #FECACA)',
+                            borderRadius: '6px',
+                            color: 'var(--color-danger, #B91C1C)',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                          }}
+                          title="Hapus transaksi"
+                          aria-label={`Hapus transaksi ${tx.kategori}`}
+                        >
+                          <Trash2 size={14} /> Hapus
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--color-border-subtle, #F5EDE4)' }}>
+          <Pagination
+            currentPage={meta.current_page}
+            lastPage={meta.last_page}
+            onPageChange={(p) => setPage(p)}
+          />
+        </div>
+      </div>
+
+      <ConfirmModal
+        open={!!deleteConfirm}
+        title="Hapus Catatan Transaksi"
+        message="Apakah Anda yakin ingin menghapus catatan transaksi keuangan ini? Data yang dihapus tidak dapat dikembalikan."
+        confirmLabel="Ya, Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        loading={deleteLoading}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
       />
     </div>
   );

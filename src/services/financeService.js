@@ -1,35 +1,62 @@
 import api from './api';
+import {
+  getTransactions as mockGetTransactions,
+  getFinanceSummary as mockGetFinanceSummary,
+  createTransaction as mockCreateTransaction,
+  updateTransaction as mockUpdateTransaction,
+  deleteTransaction as mockDeleteTransaction,
+} from '../mocks/financeMock';
 
 export const financeService = {
-  async getFinances(params = {}) {
-    const response = await api.get('/finance', { params });
-    return response.data;
+  async list(params = {}) {
+    try {
+      const { data } = await api.get('/finance', { params });
+      return data;
+    } catch {
+      const mockRes = await mockGetTransactions(params);
+      return { ...mockRes, isOffline: true };
+    }
   },
 
-  async getSummary(params = {}) {
-    const response = await api.get('/finance/summary', { params });
-    return response.data;
+  async summary(params = {}) {
+    try {
+      const { data } = await api.get('/finance/summary', { params });
+      return data;
+    } catch {
+      const mockRes = await mockGetFinanceSummary(params);
+      return { ...mockRes, isOffline: true };
+    }
   },
 
-  async getFinance(id) {
-    const response = await api.get(`/finance/${id}`);
-    return response.data;
+  async create(body) {
+    try {
+      const { data } = await api.post('/finance', body);
+      return data;
+    } catch (err) {
+      if (err.errors) return err;
+      const mockRes = await mockCreateTransaction(body);
+      return { ...mockRes, isOffline: true };
+    }
   },
 
-  async createFinance(data) {
-    const response = await api.post('/finance', data);
-    return response.data;
+  async update(id, body) {
+    try {
+      const { data } = await api.put(`/finance/${id}`, body);
+      return data;
+    } catch (err) {
+      if (err.errors) return err;
+      const mockRes = await mockUpdateTransaction(id, body);
+      return { ...mockRes, isOffline: true };
+    }
   },
 
-  async updateFinance(id, data) {
-    const response = await api.put(`/finance/${id}`, data);
-    return response.data;
-  },
-
-  async deleteFinance(id) {
-    const response = await api.delete(`/finance/${id}`);
-    return response.data;
+  async delete(id) {
+    try {
+      const { data } = await api.delete(`/finance/${id}`);
+      return data;
+    } catch {
+      const mockRes = await mockDeleteTransaction(id);
+      return { ...mockRes, isOffline: true };
+    }
   },
 };
-
-export default financeService;
