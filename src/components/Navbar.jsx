@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell, Wifi, ChevronDown } from 'lucide-react';
+import useAuth from '../hooks/useAuth';
 
 function getFormattedDate() {
   const now = new Date();
@@ -12,6 +13,7 @@ function getFormattedDate() {
 }
 
 export default function Navbar() {
+  const { user, logout } = useAuth();
   const [date, setDate] = useState(getFormattedDate());
   const [hasNotif, setHasNotif] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -158,20 +160,20 @@ export default function Navbar() {
               alignItems: 'center',
               justifyContent: 'center',
               color: '#FFFFFF',
-              fontSize: '11.5px',
+              fontSize: '11px',
               fontWeight: '700',
               flexShrink: 0,
             }}
           >
-            EB
+            {user?.name ? user.name.slice(0, 2).toUpperCase() : 'EB'}
           </div>
 
           <div style={{ textAlign: 'left' }}>
             <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#241B14', lineHeight: 1.2 }}>
-              Admin Erles
+              {user?.name || 'Admin Erles'}
             </div>
             <div style={{ fontSize: '10.5px', color: '#8C7A6B', lineHeight: 1.2 }}>
-              Kitchen Manager
+              {user?.role ? user.role.toUpperCase() : 'Kitchen Manager'}
             </div>
           </div>
 
@@ -208,43 +210,57 @@ export default function Navbar() {
             >
               <div style={{ padding: '10px 14px', borderBottom: '1px solid #EFEAE3' }}>
                 <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#241B14' }}>
-                  Admin Erles Bakery
+                  {user?.name || 'Admin Erles Bakery'}
                 </div>
                 <div style={{ fontSize: '11px', color: '#8C7A6B', marginTop: '1px' }}>
-                  admin@erlesbakery.com
+                  {user?.email || 'admin@erlesbakery.com'}
                 </div>
               </div>
 
-              {[
-                { label: 'Pengaturan Toko' },
-                { label: 'Keluar Akun', danger: true },
-              ].map(item => (
-                <button
-                  key={item.label}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 14px',
-                    background: 'transparent',
-                    border: 'none',
-                    fontSize: '12.5px',
-                    color: item.danger ? '#DC2626' : '#5C4A3C',
-                    cursor: 'pointer',
-                    transition: 'background 0.12s',
-                    fontFamily: 'inherit',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = item.danger ? '#FEF2F2' : '#FAF7F2';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
-                  onClick={() => setProfileOpen(false)}
-                >
-                  {item.label}
-                </button>
-              ))}
+              <button
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 14px',
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '12.5px',
+                  color: '#5C4A3C',
+                  cursor: 'pointer',
+                  transition: 'background 0.12s',
+                  fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#FAF7F2'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                onClick={() => setProfileOpen(false)}
+              >
+                Pengaturan Toko
+              </button>
+
+              <button
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 14px',
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '12.5px',
+                  color: '#DC2626',
+                  cursor: 'pointer',
+                  transition: 'background 0.12s',
+                  fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#FEF2F2'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                onClick={() => {
+                  setProfileOpen(false);
+                  logout();
+                }}
+              >
+                Keluar Akun
+              </button>
             </div>
           </>
         )}

@@ -1,20 +1,16 @@
 import { BrowserRouter } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import Navbar from './components/Navbar';
+import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import AppRoutes from './routes/AppRoutes';
 
 function App() {
   return (
     <BrowserRouter>
-      <div style={{ display: 'flex', minHeight: '100vh', background: '#FAF7F2' }}>
-        <Sidebar />
-        <main style={{ flex: 1, marginLeft: '240px', display: 'flex', flexDirection: 'column' }}>
-          <Navbar />
-          <div style={{ padding: '32px', flex: 1 }}>
-            <AppRoutes />
-          </div>
-        </main>
-      </div>
+      <AuthProvider>
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
