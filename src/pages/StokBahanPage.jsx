@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 import {
   Boxes, Plus, Search, Filter,
-  CheckCircle, AlertTriangle, AlertCircle,
-  RotateCcw, X, Edit2, Trash2, Tag, ChevronDown,
-  Layers
+  CheckCircle2, AlertTriangle, AlertCircle,
+  RotateCcw, X, Edit2, Trash2, Tag, ChevronDown
 } from 'lucide-react';
 
 // ─── Dummy Data Stok Bahan Baku Erles Bakery ──────────────────────────────────
@@ -62,31 +61,41 @@ const initialIngredients = [
   {
     id: 6,
     kode: 'BHN-006',
-    nama: 'Tepung Terigu Protein Sedang',
-    kategori: 'Tepung',
-    stok: 50,
-    satuan: 'kg',
-    minimumStok: 20,
+    nama: 'Susu UHT Full Cream',
+    kategori: 'Dairy & Telur',
+    stok: 24,
+    satuan: 'liter',
+    minimumStok: 12,
     status: 'Aman',
   },
   {
     id: 7,
     kode: 'BHN-007',
-    nama: 'Keju Cheddar Olahan',
-    kategori: 'Dairy & Keju',
-    stok: 10,
+    nama: 'Telur Ayam Segar',
+    kategori: 'Dairy & Telur',
+    stok: 8,
+    satuan: 'kg',
+    minimumStok: 10,
+    status: 'Menipis',
+  },
+  {
+    id: 8,
+    kode: 'BHN-008',
+    nama: 'Keju Cheddar Blok Kraft',
+    kategori: 'Dairy & Telur',
+    stok: 6,
     satuan: 'block',
     minimumStok: 5,
     status: 'Aman',
   },
   {
-    id: 8,
-    kode: 'BHN-008',
-    nama: 'Susu Cair UHT Full Cream',
-    kategori: 'Dairy & Keju',
-    stok: 28,
-    satuan: 'liter',
-    minimumStok: 12,
+    id: 9,
+    kode: 'BHN-009',
+    nama: 'Vanili Bubuk Ekstrak',
+    kategori: 'Perisa & Pewarna',
+    stok: 10,
+    satuan: 'pack',
+    minimumStok: 4,
     status: 'Aman',
   },
 ];
@@ -97,146 +106,170 @@ const categoryList = [
   'Lemak & Butter',
   'Pemanis',
   'Pengembang',
+  'Dairy & Telur',
   'Coklat & Topping',
-  'Dairy & Keju',
+  'Perisa & Pewarna',
 ];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getStatusBadge(status) {
   switch (status) {
-    case 'Aman':
-      return { bg: '#D1FAE5', text: '#065F46', border: '#A7F3D0', icon: CheckCircle };
-    case 'Menipis':
-      return { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A', icon: AlertCircle };
     case 'Kritis':
-      return { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA', icon: AlertTriangle };
+      return {
+        bg: '#FEF2F2',
+        text: '#991B1B',
+        dot: '#DC2626',
+        label: 'Kritis (Belanja Segera)',
+      };
+    case 'Menipis':
+      return {
+        bg: '#FEF9C3',
+        text: '#854D0E',
+        dot: '#CA8A04',
+        label: 'Stok Menipis',
+      };
+    case 'Aman':
+      return {
+        bg: '#F0FDF4',
+        text: '#166534',
+        dot: '#16A34A',
+        label: 'Stok Aman',
+      };
     default:
-      return { bg: '#F1F5F9', text: '#475569', border: '#E2E8F0', icon: CheckCircle };
+      return {
+        bg: '#FAF7F2',
+        text: '#5C4A3C',
+        dot: '#8C7A6B',
+        label: status,
+      };
   }
 }
 
-// ─── Modal Tambah / Edit Bahan ────────────────────────────────────────────────
+// ─── Modal Form Tambah / Edit Bahan ───────────────────────────────────────────
 
 function IngredientFormModal({ item, onClose, onSave }) {
   const isEditing = Boolean(item);
   const [formData, setFormData] = useState({
-    id: item?.id || Date.now(),
-    kode: item?.kode || `BHN-00${Math.floor(10 + Math.random() * 90)}`,
-    nama: item?.nama || '',
-    kategori: item?.kategori || 'Tepung',
-    stok: item?.stok !== undefined ? item.stok : '',
-    satuan: item?.satuan || 'kg',
-    minimumStok: item?.minimumStok !== undefined ? item.minimumStok : 10,
-    status: item?.status || 'Aman',
+    id: item ? item.id : Date.now(),
+    kode: item ? item.kode : `BHN-00${Math.floor(Math.random() * 90 + 10)}`,
+    nama: item ? item.nama : '',
+    kategori: item ? item.kategori : 'Tepung',
+    stok: item ? item.stok : '',
+    satuan: item ? item.satuan : 'kg',
+    minimumStok: item ? item.minimumStok : '',
+    status: item ? item.status : 'Aman',
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.nama || formData.stok === '') return;
-
     const stokNum = parseFloat(formData.stok) || 0;
     const minNum = parseFloat(formData.minimumStok) || 0;
 
-    let autoStatus = 'Aman';
-    if (stokNum <= minNum * 0.6) autoStatus = 'Kritis';
-    else if (stokNum <= minNum) autoStatus = 'Menipis';
+    let computedStatus = 'Aman';
+    if (stokNum <= minNum * 0.5) {
+      computedStatus = 'Kritis';
+    } else if (stokNum <= minNum) {
+      computedStatus = 'Menipis';
+    }
 
     onSave({
       ...formData,
       stok: stokNum,
       minimumStok: minNum,
-      status: autoStatus,
+      status: computedStatus,
     });
     onClose();
+  };
+
+  const fieldStyle = {
+    width: '100%',
+    padding: '8px 12px',
+    borderRadius: '8px',
+    border: '1px solid #E6DED4',
+    background: '#FFFFFF',
+    fontSize: '13px',
+    color: '#241B14',
+    outline: 'none',
+    boxSizing: 'border-box',
+    fontFamily: 'inherit',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#6E5D4F',
+    marginBottom: '5px',
   };
 
   return (
     <>
       <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, zIndex: 999,
-        background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(3px)',
+        position: 'fixed', inset: 0, zIndex: 1099,
+        background: 'rgba(36, 27, 20, 0.45)', backdropFilter: 'blur(2px)',
       }} />
-
       <div style={{
-        position: 'fixed', zIndex: 1000,
+        position: 'fixed', zIndex: 1100,
         top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: 'min(480px, calc(100vw - 40px))',
-        background: '#FFFFFF', borderRadius: '16px',
-        boxShadow: '0 20px 60px rgba(15, 23, 42, 0.20)',
-        overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        width: 'min(440px, calc(100vw - 32px))',
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        boxShadow: '0 16px 40px rgba(36, 27, 20, 0.14)',
+        overflow: 'hidden',
       }}>
         {/* Header */}
         <div style={{
-          padding: '20px 24px', borderBottom: '1px solid #F1F5F9',
-          background: 'linear-gradient(135deg, #1E1B4B, #312E81)',
+          padding: '18px 24px',
+          borderBottom: '1px solid #EFEAE3',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div>
-            <div style={{ fontSize: '12px', color: '#A5B4FC', fontWeight: '500' }}>Master Bahan Baku</div>
-            <div style={{ fontSize: '17px', fontWeight: '700', color: '#FFFFFF' }}>
-              {isEditing ? 'Edit Data Bahan' : 'Tambah Bahan Baku Baru'}
-            </div>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#241B14', margin: '0 0 2px' }}>
+              {isEditing ? 'Perbarui Bahan Baku' : 'Tambah Bahan Baku Baru'}
+            </h2>
+            <p style={{ fontSize: '12px', color: '#8C7A6B', margin: 0 }}>
+              Inventaris dapur dan gudang penyimpanan Erles Bakery
+            </p>
           </div>
           <button onClick={onClose} style={{
-            background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: '8px',
-            width: '32px', height: '32px', color: 'white', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            background: 'none', border: 'none', color: '#8C7A6B',
+            cursor: 'pointer', padding: '4px', borderRadius: '4px',
           }}>
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleSubmit} style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
-              Nama Bahan Baku *
-            </label>
+            <label style={labelStyle}>Nama Bahan Baku *</label>
             <input
-              required
               type="text"
+              required
               placeholder="Contoh: Tepung Terigu Protein Tinggi"
               value={formData.nama}
               onChange={e => setFormData({ ...formData, nama: e.target.value })}
-              style={{
-                width: '100%', padding: '9px 12px', borderRadius: '8px',
-                border: '1.5px solid #CBD5E1', fontSize: '13.5px', outline: 'none',
-                boxSizing: 'border-box', fontFamily: 'inherit',
-              }}
+              style={fieldStyle}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr', gap: '10px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
-                Kode Bahan
-              </label>
+              <label style={labelStyle}>Kode</label>
               <input
                 type="text"
                 value={formData.kode}
                 onChange={e => setFormData({ ...formData, kode: e.target.value })}
-                style={{
-                  width: '100%', padding: '9px 12px', borderRadius: '8px',
-                  border: '1.5px solid #CBD5E1', fontSize: '13.5px', outline: 'none',
-                  boxSizing: 'border-box', fontFamily: 'inherit',
-                }}
+                style={fieldStyle}
               />
             </div>
-
             <div>
-              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
-                Kategori
-              </label>
+              <label style={labelStyle}>Kategori</label>
               <select
                 value={formData.kategori}
                 onChange={e => setFormData({ ...formData, kategori: e.target.value })}
-                style={{
-                  width: '100%', padding: '9px 12px', borderRadius: '8px',
-                  border: '1.5px solid #CBD5E1', fontSize: '13.5px', outline: 'none',
-                  boxSizing: 'border-box', fontFamily: 'inherit', background: 'white',
-                }}
+                style={{ ...fieldStyle, cursor: 'pointer' }}
               >
                 {categoryList.filter(c => c !== 'Semua Kategori').map(c => (
                   <option key={c} value={c}>{c}</option>
@@ -247,51 +280,30 @@ function IngredientFormModal({ item, onClose, onSave }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
-                Jumlah Stok *
-              </label>
+              <label style={labelStyle}>Stok Saat Ini *</label>
               <input
-                required
                 type="number"
-                placeholder="10"
+                required
                 value={formData.stok}
                 onChange={e => setFormData({ ...formData, stok: e.target.value })}
-                style={{
-                  width: '100%', padding: '9px 10px', borderRadius: '8px',
-                  border: '1.5px solid #CBD5E1', fontSize: '13.5px', outline: 'none',
-                  boxSizing: 'border-box', fontFamily: 'inherit',
-                }}
+                style={fieldStyle}
               />
             </div>
-
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
-                Minimum Stok
-              </label>
+              <label style={labelStyle}>Batas Minimum</label>
               <input
                 type="number"
                 value={formData.minimumStok}
                 onChange={e => setFormData({ ...formData, minimumStok: e.target.value })}
-                style={{
-                  width: '100%', padding: '9px 10px', borderRadius: '8px',
-                  border: '1.5px solid #CBD5E1', fontSize: '13.5px', outline: 'none',
-                  boxSizing: 'border-box', fontFamily: 'inherit',
-                }}
+                style={fieldStyle}
               />
             </div>
-
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#475569', marginBottom: '5px' }}>
-                Satuan
-              </label>
+              <label style={labelStyle}>Satuan</label>
               <select
                 value={formData.satuan}
                 onChange={e => setFormData({ ...formData, satuan: e.target.value })}
-                style={{
-                  width: '100%', padding: '9px 8px', borderRadius: '8px',
-                  border: '1.5px solid #CBD5E1', fontSize: '13px', outline: 'none',
-                  boxSizing: 'border-box', fontFamily: 'inherit', background: 'white',
-                }}
+                style={{ ...fieldStyle, cursor: 'pointer' }}
               >
                 <option value="kg">kg</option>
                 <option value="gr">gr</option>
@@ -303,14 +315,14 @@ function IngredientFormModal({ item, onClose, onSave }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
             <button
               type="button"
               onClick={onClose}
               style={{
-                padding: '10px 18px', borderRadius: '8px',
-                border: '1.5px solid #E2E8F0', background: 'white',
-                color: '#64748B', fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+                padding: '8px 16px', borderRadius: '8px', border: '1px solid #E6DED4',
+                background: '#FFFFFF', color: '#5C4A3C', fontSize: '13px', fontWeight: '600',
+                cursor: 'pointer',
               }}
             >
               Batal
@@ -318,11 +330,9 @@ function IngredientFormModal({ item, onClose, onSave }) {
             <button
               type="submit"
               style={{
-                padding: '10px 22px', borderRadius: '8px',
-                background: 'linear-gradient(135deg, #6366F1, #4338CA)',
-                border: 'none', color: 'white', fontWeight: '700',
-                fontSize: '13px', cursor: 'pointer',
-                boxShadow: '0 3px 10px rgba(99,102,241,0.3)',
+                padding: '8px 18px', borderRadius: '8px', border: 'none',
+                background: '#241B14', color: '#FFFFFF', fontSize: '13px', fontWeight: '600',
+                cursor: 'pointer',
               }}
             >
               {isEditing ? 'Simpan Perubahan' : 'Tambah Bahan'}
@@ -343,56 +353,52 @@ function DeleteModal({ item, onClose, onConfirm }) {
     <>
       <div onClick={onClose} style={{
         position: 'fixed', inset: 0, zIndex: 1099,
-        background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(3px)',
+        background: 'rgba(36, 27, 20, 0.45)', backdropFilter: 'blur(2px)',
       }} />
-
       <div style={{
         position: 'fixed', zIndex: 1100,
         top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: 'min(380px, calc(100vw - 40px))',
-        background: '#FFFFFF', borderRadius: '14px',
-        boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
-        padding: '28px 24px', textAlign: 'center',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px',
+        width: 'min(360px, calc(100vw - 32px))',
+        background: '#FFFFFF', borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        boxShadow: '0 16px 40px rgba(36, 27, 20, 0.14)',
+        padding: '24px 24px 20px',
+        textAlign: 'center',
       }}>
         <div style={{
-          width: '50px', height: '50px', borderRadius: '50%',
-          background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: '44px', height: '44px', borderRadius: '50%',
+          background: '#FEF2F2', margin: '0 auto 12px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <AlertTriangle size={24} color="#EF4444" />
+          <AlertTriangle size={22} color="#DC2626" />
         </div>
-
-        <div>
-          <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#1E293B', margin: '0 0 6px' }}>
-            Hapus Bahan Baku?
-          </h3>
-          <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
-            Bahan <strong style={{ color: '#0F172A' }}>{item.nama}</strong> ({item.kode}) akan dihapus permanen dari sistem inventaris.
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+        <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#241B14', margin: '0 0 6px' }}>
+          Hapus Bahan Baku?
+        </h3>
+        <p style={{ fontSize: '13px', color: '#6E5D4F', margin: '0 0 16px', lineHeight: 1.4 }}>
+          Bahan <strong>{item.nama}</strong> ({item.kode}) akan dihapus permanen dari sistem inventaris dapur.
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
           <button
             onClick={onClose}
             style={{
-              padding: '9px 18px', borderRadius: '8px',
-              border: '1.5px solid #E2E8F0', background: 'white',
-              color: '#64748B', fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+              padding: '8px 16px', borderRadius: '8px', border: '1px solid #E6DED4',
+              background: '#FFFFFF', color: '#5C4A3C', fontSize: '13px', fontWeight: '600',
+              cursor: 'pointer',
             }}
           >
             Batal
           </button>
           <button
-            onClick={() => onConfirm(item.id)}
+            onClick={() => { onConfirm(item.id); onClose(); }}
             style={{
-              padding: '9px 20px', borderRadius: '8px',
-              background: '#EF4444', color: 'white', border: 'none',
-              fontWeight: '700', fontSize: '13px', cursor: 'pointer',
-              boxShadow: '0 2px 8px rgba(239,68,68,0.3)',
+              padding: '8px 18px', borderRadius: '8px', border: 'none',
+              background: '#DC2626', color: '#FFFFFF', fontSize: '13px', fontWeight: '600',
+              cursor: 'pointer',
             }}
           >
-            Hapus
+            Ya, Hapus
           </button>
         </div>
       </div>
@@ -400,7 +406,7 @@ function DeleteModal({ item, onClose, onConfirm }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page Component ──────────────────────────────────────────────────────
 
 export default function StokBahanPage() {
   const [ingredients, setIngredients] = useState(initialIngredients);
@@ -411,11 +417,11 @@ export default function StokBahanPage() {
   const [modalState, setModalState] = useState({ isOpen: false, item: null });
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // 4 Summary Metrics Sesuai Task 3
-  const totalBahan = ingredients.length;
-  const bahanAman = ingredients.filter(i => i.status === 'Aman').length;
-  const bahanMenipis = ingredients.filter(i => i.status === 'Menipis').length;
-  const bahanKritis = ingredients.filter(i => i.status === 'Kritis').length;
+  // Metrics
+  const totalBahan    = ingredients.length;
+  const bahanAman     = ingredients.filter(i => i.status === 'Aman').length;
+  const bahanMenipis  = ingredients.filter(i => i.status === 'Menipis').length;
+  const bahanKritis   = ingredients.filter(i => i.status === 'Kritis').length;
 
   const handleSaveIngredient = (itemData) => {
     if (modalState.item) {
@@ -450,224 +456,259 @@ export default function StokBahanPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '32px' }}>
+    <div style={{
+      maxWidth: '1280px',
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '24px',
+      color: '#241B14',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    }}>
 
-      {/* ── [A] HEADER STOK BAHAN ────────────────────────────────────── */}
+      {/* ── [1] HEADER ──────────────────────────────────────────────── */}
       <div style={{
-        background: '#FFFFFF',
-        borderRadius: '16px',
-        padding: '24px 28px',
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '16px',
+        paddingBottom: '4px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div>
           <div style={{
-            width: '46px', height: '46px', borderRadius: '12px',
-            background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(245,158,11,0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px',
+            color: '#8C7A6B',
+            fontWeight: '600',
+            letterSpacing: '0.02em',
+            marginBottom: '4px',
           }}>
-            <Boxes size={22} color="white" />
+            <span>ERLES BAKERY</span>
+            <span style={{ color: '#D4C5B9' }}>/</span>
+            <span>INVENTARIS GUDANG & DAPUR</span>
           </div>
-          <div>
-            <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.3px' }}>
-              Inventaris Bahan Baku
-            </h1>
-            <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
-              Pantau ketersediaan tepung, butter, gula, ragi, coklat, serta batas minimum stok bahan bakery.
-            </p>
+
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '700',
+            color: '#241B14',
+            margin: '0 0 6px 0',
+            letterSpacing: '-0.02em',
+          }}>
+            Inventaris Bahan Baku
+          </h1>
+
+          <div style={{ fontSize: '13px', color: '#6E5D4F' }}>
+            {bahanKritis > 0 ? (
+              <span style={{ color: '#DC2626', fontWeight: '600' }}>
+                ⚠ {bahanKritis} bahan mencapai batas kritis (segera belanja ulang)
+              </span>
+            ) : (
+              <span style={{ color: '#166534', fontWeight: '500' }}>
+                ✓ Seluruh stok bahan baku dalam batas aman
+              </span>
+            )}
+            <span style={{ color: '#D4C5B9', margin: '0 8px' }}>•</span>
+            <span>Total {totalBahan} item bahan terdaftar di dapur</span>
           </div>
         </div>
 
         <button
           onClick={() => setModalState({ isOpen: true, item: null })}
           style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '10px 20px', borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6366F1, #4338CA)',
-            color: 'white', border: 'none', fontWeight: '700',
-            fontSize: '13.5px', cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(99,102,241,0.25)',
-            transition: 'all 0.15s ease', fontFamily: 'inherit',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            borderRadius: '8px',
+            border: 'none',
+            background: '#241B14',
+            color: '#FFFFFF',
+            fontSize: '13px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'background 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#3D2D22'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#241B14'; }}
         >
-          <Plus size={17} />
-          Tambah Bahan
+          <Plus size={15} />
+          Tambah Bahan Baku
         </button>
       </div>
 
-      {/* ── [B] 4 SUMMARY CARDS (SESUAI INSTRUKSI) ───────────────────── */}
+      {/* ── [2] UNIFIED METRIC STRIP ─────────────────────────────────── */}
       <div style={{
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '16px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
       }}>
-        {/* 1. Total Bahan */}
-        <div style={{
-          background: '#FFFFFF', borderRadius: '14px', padding: '20px 22px',
-          border: '1px solid #E2E8F0', borderLeft: '4px solid #6366F1',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '14px',
-        }}>
-          <div style={{ background: '#EEF2FF', borderRadius: '12px', padding: '12px', display: 'flex' }}>
-            <Layers size={22} color="#6366F1" />
+        {/* Metric 1: Total Bahan */}
+        <div style={{ padding: '20px 24px', borderRight: '1px solid #EFEAE3' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Total Bahan Terdata
           </div>
-          <div>
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600', marginBottom: '3px' }}>
-              Total Bahan
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.4px' }}>
-              {totalBahan}
-            </div>
-            <div style={{ fontSize: '11.5px', color: '#94A3B8', marginTop: '2px' }}>
-              Bahan baku terdaftar
-            </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {totalBahan} <span style={{ fontSize: '14px', fontWeight: '500', color: '#8C7A6B' }}>item</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Inventaris bahan mentah dapur
           </div>
         </div>
 
-        {/* 2. Bahan Aman */}
-        <div style={{
-          background: '#FFFFFF', borderRadius: '14px', padding: '20px 22px',
-          border: '1px solid #E2E8F0', borderLeft: '4px solid #10B981',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '14px',
-        }}>
-          <div style={{ background: '#ECFDF5', borderRadius: '12px', padding: '12px', display: 'flex' }}>
-            <CheckCircle size={22} color="#10B981" />
+        {/* Metric 2: Bahan Kritis (Urgent) */}
+        <div style={{ padding: '20px 24px', borderRight: '1px solid #EFEAE3' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Stok Kritis
           </div>
-          <div>
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600', marginBottom: '3px' }}>
-              Bahan Aman
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.4px' }}>
-              {bahanAman}
-            </div>
-            <div style={{ fontSize: '11.5px', color: '#94A3B8', marginTop: '2px' }}>
-              Di atas batas minimum
-            </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: bahanKritis > 0 ? '#DC2626' : '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {bahanKritis} <span style={{ fontSize: '14px', fontWeight: '500', color: '#8C7A6B' }}>bahan</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Di bawah 50% batas minimum
           </div>
         </div>
 
-        {/* 3. Bahan Menipis */}
-        <div style={{
-          background: '#FFFFFF', borderRadius: '14px', padding: '20px 22px',
-          border: '1px solid #E2E8F0', borderLeft: '4px solid #F59E0B',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '14px',
-        }}>
-          <div style={{ background: '#FFFBEB', borderRadius: '12px', padding: '12px', display: 'flex' }}>
-            <AlertCircle size={22} color="#F59E0B" />
+        {/* Metric 3: Bahan Menipis */}
+        <div style={{ padding: '20px 24px', borderRight: '1px solid #EFEAE3' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Stok Menipis
           </div>
-          <div>
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600', marginBottom: '3px' }}>
-              Bahan Menipis
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.4px' }}>
-              {bahanMenipis}
-            </div>
-            <div style={{ fontSize: '11.5px', color: '#94A3B8', marginTop: '2px' }}>
-              Mendekati batas aman
-            </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: bahanMenipis > 0 ? '#B45309' : '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {bahanMenipis} <span style={{ fontSize: '14px', fontWeight: '500', color: '#8C7A6B' }}>bahan</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Mendekati batas minimum
           </div>
         </div>
 
-        {/* 4. Bahan Kritis */}
-        <div style={{
-          background: '#FFFFFF', borderRadius: '14px', padding: '20px 22px',
-          border: '1px solid #E2E8F0', borderLeft: '4px solid #EF4444',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '14px',
-        }}>
-          <div style={{ background: '#FEF2F2', borderRadius: '12px', padding: '12px', display: 'flex' }}>
-            <AlertTriangle size={22} color="#EF4444" />
+        {/* Metric 4: Bahan Aman */}
+        <div style={{ padding: '20px 24px' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Stok Aman
           </div>
-          <div>
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: '600', marginBottom: '3px' }}>
-              Bahan Kritis
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: '800', color: '#0F172A', letterSpacing: '-0.4px' }}>
-              {bahanKritis}
-            </div>
-            <div style={{ fontSize: '11.5px', color: '#94A3B8', marginTop: '2px' }}>
-              Perlu segera belanja ulang
-            </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#166534',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {bahanAman} <span style={{ fontSize: '14px', fontWeight: '500', color: '#8C7A6B' }}>bahan</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Cukup untuk produksi berjalan
           </div>
         </div>
       </div>
 
-      {/* ── [C] FILTER & SEARCH BAR ──────────────────────────────────── */}
+      {/* ── [3] FILTER CONTROLS ──────────────────────────────────────── */}
       <div style={{
         background: '#FFFFFF',
-        borderRadius: '14px',
-        border: '1px solid #E2E8F0',
-        padding: '16px 20px',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        padding: '14px 18px',
         display: 'flex',
-        alignItems: 'center',
-        flexWrap: 'wrap',
         gap: '12px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.02)',
       }}>
         {/* Search */}
-        <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+        <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
+          <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#9C8B7E' }} />
           <input
             type="text"
-            placeholder="Cari nama bahan (Tepung, Butter, Ragi, dll) atau kode..."
+            placeholder="Cari nama bahan (Tepung, Butter, Ragi...) atau kode..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             style={{
-              width: '100%', padding: '9px 12px 9px 38px',
-              border: '1.5px solid #E2E8F0', borderRadius: '9px',
-              fontSize: '13.5px', outline: 'none', boxSizing: 'border-box',
-              fontFamily: 'inherit',
+              width: '100%',
+              padding: '8px 12px 8px 34px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '13px',
+              color: '#241B14',
+              outline: 'none',
+              boxSizing: 'border-box',
+              background: '#FAF7F2',
             }}
           />
         </div>
 
         {/* Filter Kategori */}
-        <div style={{ position: 'relative', minWidth: '170px' }}>
-          <Tag size={14} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+        <div style={{ minWidth: '150px' }}>
           <select
             value={selectedCategory}
             onChange={e => setSelectedCategory(e.target.value)}
             style={{
-              width: '100%', padding: '9px 30px 9px 32px',
-              border: '1.5px solid #E2E8F0', borderRadius: '9px',
-              fontSize: '13px', outline: 'none', appearance: 'none',
-              background: 'white', cursor: 'pointer', fontFamily: 'inherit',
-              color: selectedCategory !== 'Semua Kategori' ? '#1E293B' : '#64748B',
+              width: '100%',
+              padding: '8px 10px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '12.5px',
+              color: '#4A3B30',
+              background: '#FAF7F2',
+              cursor: 'pointer',
+              outline: 'none',
             }}
           >
             {categoryList.map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
-          <ChevronDown size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94A3B8' }} />
         </div>
 
         {/* Filter Status */}
-        <div style={{ position: 'relative', minWidth: '150px' }}>
-          <Filter size={14} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+        <div style={{ minWidth: '140px' }}>
           <select
             value={selectedStatus}
             onChange={e => setSelectedStatus(e.target.value)}
             style={{
-              width: '100%', padding: '9px 30px 9px 32px',
-              border: '1.5px solid #E2E8F0', borderRadius: '9px',
-              fontSize: '13px', outline: 'none', appearance: 'none',
-              background: 'white', cursor: 'pointer', fontFamily: 'inherit',
-              color: selectedStatus !== 'Semua Status' ? '#1E293B' : '#64748B',
+              width: '100%',
+              padding: '8px 10px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '12.5px',
+              color: '#4A3B30',
+              background: '#FAF7F2',
+              cursor: 'pointer',
+              outline: 'none',
             }}
           >
             <option value="Semua Status">Semua Status</option>
-            <option value="Aman">Aman</option>
-            <option value="Menipis">Menipis</option>
-            <option value="Kritis">Kritis</option>
+            <option value="Aman">Stok Aman</option>
+            <option value="Menipis">Stok Menipis</option>
+            <option value="Kritis">Stok Kritis</option>
           </select>
-          <ChevronDown size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94A3B8' }} />
         </div>
 
         {/* Reset Filter */}
@@ -675,134 +716,185 @@ export default function StokBahanPage() {
           <button
             onClick={resetFilter}
             style={{
-              display: 'flex', alignItems: 'center', gap: '5px',
-              padding: '9px 12px', borderRadius: '8px',
-              border: '1.5px solid #EEF2FF', background: '#EEF2FF',
-              color: '#6366F1', fontSize: '12.5px', fontWeight: '600',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '7px 11px',
+              borderRadius: '7px',
+              border: '1px solid #E6DED4',
+              background: '#FFFFFF',
+              color: '#7D6B5C',
+              fontSize: '12px',
+              fontWeight: '600',
               cursor: 'pointer',
             }}
           >
-            <RotateCcw size={13} />
+            <RotateCcw size={12} />
             Reset
           </button>
         )}
 
-        <div style={{ marginLeft: 'auto', fontSize: '13px', color: '#94A3B8' }}>
+        {/* Counter */}
+        <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#8C7A6B' }}>
           {filteredIngredients.length} dari {ingredients.length} bahan
         </div>
       </div>
 
-      {/* ── [D] TABEL INVENTARIS BAHAN BAKU ─────────────────────────── */}
+      {/* ── [4] TABEL INVENTARIS BAHAN BAKU ─────────────────────────── */}
       <div style={{
         background: '#FFFFFF',
-        borderRadius: '16px',
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
         overflow: 'hidden',
       }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: '13px',
+            textAlign: 'left',
+          }}>
             <thead>
-              <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                <th style={{ padding: '13px 18px', textAlign: 'left', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Kode</th>
-                <th style={{ padding: '13px 18px', textAlign: 'left', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px', minWidth: '220px' }}>Nama Bahan</th>
-                <th style={{ padding: '13px 18px', textAlign: 'left', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Kategori</th>
-                <th style={{ padding: '13px 18px', textAlign: 'center', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Jumlah Stok</th>
-                <th style={{ padding: '13px 18px', textAlign: 'center', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Satuan</th>
-                <th style={{ padding: '13px 18px', textAlign: 'center', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Minimum Stok</th>
-                <th style={{ padding: '13px 18px', textAlign: 'center', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Status</th>
-                <th style={{ padding: '13px 18px', textAlign: 'center', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Aksi</th>
+              <tr style={{
+                background: '#FAF7F2',
+                borderBottom: '1px solid #E6DED4',
+                color: '#6E5D4F',
+                fontSize: '12px',
+                fontWeight: '600',
+              }}>
+                <th style={{ padding: '11px 18px' }}>Kode</th>
+                <th style={{ padding: '11px 18px', minWidth: '220px' }}>Nama Bahan Baku</th>
+                <th style={{ padding: '11px 18px' }}>Kategori</th>
+                <th style={{ padding: '11px 18px', textAlign: 'right' }}>Jumlah Stok</th>
+                <th style={{ padding: '11px 18px', textAlign: 'right' }}>Batas Minimum</th>
+                <th style={{ padding: '11px 18px', textAlign: 'center' }}>Status Stok</th>
+                <th style={{ padding: '11px 18px', textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filteredIngredients.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: '48px 20px', textAlign: 'center' }}>
+                  <td colSpan={7} style={{ padding: '48px 24px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <Boxes size={28} color="#CBD5E1" />
-                      <div style={{ fontSize: '15px', fontWeight: '700', color: '#94A3B8' }}>Bahan baku tidak ditemukan</div>
-                      <div style={{ fontSize: '12.5px', color: '#CBD5E1' }}>Sesuaikan kata kunci pencarian atau filter status.</div>
+                      <Boxes size={28} color="#D4C5B9" />
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#7D6B5C' }}>
+                        Bahan baku tidak ditemukan
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#9C8B7E' }}>
+                        Sesuaikan kata kunci pencarian atau reset filter.
+                      </div>
                     </div>
                   </td>
                 </tr>
               ) : (
                 filteredIngredients.map(item => {
                   const badge = getStatusBadge(item.status);
-                  const Icon = badge.icon;
 
                   return (
                     <tr
                       key={item.id}
-                      style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.12s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#FAFAFF'}
+                      style={{
+                        borderBottom: '1px solid #F3EDE6',
+                        transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#FAF7F2'}
                       onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
                     >
                       {/* Kode */}
-                      <td style={{ padding: '13px 18px', fontWeight: '700', color: '#6366F1', whiteSpace: 'nowrap' }}>
+                      <td style={{
+                        padding: '12px 18px',
+                        fontWeight: '600',
+                        color: '#6E5D4F',
+                        fontVariantNumeric: 'tabular-nums',
+                        whiteSpace: 'nowrap',
+                      }}>
                         {item.kode}
                       </td>
 
                       {/* Nama Bahan */}
-                      <td style={{ padding: '13px 18px' }}>
-                        <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '13.5px' }}>
-                          {item.nama}
-                        </div>
+                      <td style={{ padding: '12px 18px' }}>
+                        <div style={{ fontWeight: '600', color: '#241B14' }}>{item.nama}</div>
                       </td>
 
                       {/* Kategori */}
-                      <td style={{ padding: '13px 18px', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}>
                         <span style={{
-                          display: 'inline-block', padding: '3px 8px', borderRadius: '6px',
-                          background: '#F1F5F9', color: '#475569', fontSize: '12px', fontWeight: '600',
+                          display: 'inline-block',
+                          padding: '2px 7px',
+                          borderRadius: '4px',
+                          background: '#F7F3EE',
+                          color: '#5C4A3C',
+                          fontSize: '12px',
+                          fontWeight: '600',
                         }}>
                           {item.kategori}
                         </span>
                       </td>
 
-                      {/* Jumlah Stok */}
-                      <td style={{ padding: '13px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        <span style={{
-                          fontSize: '14px', fontWeight: '800',
-                          color: item.status === 'Kritis' ? '#EF4444' : item.status === 'Menipis' ? '#D97706' : '#0F172A',
-                        }}>
-                          {item.stok}
-                        </span>
-                      </td>
-
-                      {/* Satuan */}
-                      <td style={{ padding: '13px 18px', textAlign: 'center', fontWeight: '600', color: '#64748B', fontSize: '12.5px' }}>
-                        {item.satuan}
+                      {/* Jumlah Stok (Right-aligned, tabular figures) */}
+                      <td style={{
+                        padding: '12px 18px',
+                        textAlign: 'right',
+                        fontWeight: '700',
+                        color: item.status === 'Kritis' ? '#DC2626' : item.status === 'Menipis' ? '#B45309' : '#241B14',
+                        fontVariantNumeric: 'tabular-nums',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {item.stok} <span style={{ fontSize: '11.5px', fontWeight: '500', color: '#8C7A6B' }}>{item.satuan}</span>
                       </td>
 
                       {/* Minimum Stok */}
-                      <td style={{ padding: '13px 18px', textAlign: 'center', color: '#64748B', fontWeight: '600', fontSize: '13px' }}>
+                      <td style={{
+                        padding: '12px 18px',
+                        textAlign: 'right',
+                        color: '#6E5D4F',
+                        fontVariantNumeric: 'tabular-nums',
+                        whiteSpace: 'nowrap',
+                      }}>
                         {item.minimumStok} {item.satuan}
                       </td>
 
-                      {/* Status */}
-                      <td style={{ padding: '13px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      {/* Status Badge */}
+                      <td style={{ padding: '12px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '4px',
-                          padding: '3px 10px', borderRadius: '20px',
-                          background: badge.bg, color: badge.text, border: `1px solid ${badge.border}`,
-                          fontSize: '11.5px', fontWeight: '700',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: badge.bg,
+                          color: badge.text,
+                          fontSize: '11.5px',
+                          fontWeight: '600',
                         }}>
-                          <Icon size={12} />
-                          {badge.label || item.status}
+                          <span style={{
+                            width: '5px',
+                            height: '5px',
+                            borderRadius: '50%',
+                            background: badge.dot,
+                          }} />
+                          {badge.label}
                         </span>
                       </td>
 
                       {/* Aksi: Edit & Hapus */}
-                      <td style={{ padding: '13px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <td style={{ padding: '12px 18px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                           <button
                             onClick={() => setModalState({ isOpen: true, item: item })}
                             title="Edit Bahan"
                             style={{
-                              padding: '6px', borderRadius: '6px',
-                              background: '#EEF2FF', border: '1px solid #C7D2FE',
-                              color: '#6366F1', cursor: 'pointer', display: 'flex',
+                              background: 'none',
+                              border: 'none',
+                              color: '#6E5D4F',
+                              cursor: 'pointer',
+                              padding: '3px',
+                              borderRadius: '4px',
+                              transition: 'color 0.15s',
                             }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#241B14'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#6E5D4F'; }}
                           >
                             <Edit2 size={13} />
                           </button>
@@ -810,10 +902,16 @@ export default function StokBahanPage() {
                             onClick={() => setDeleteTarget(item)}
                             title="Hapus Bahan"
                             style={{
-                              padding: '6px', borderRadius: '6px',
-                              background: '#FEF2F2', border: '1px solid #FECACA',
-                              color: '#EF4444', cursor: 'pointer', display: 'flex',
+                              background: 'none',
+                              border: 'none',
+                              color: '#9C8B7E',
+                              cursor: 'pointer',
+                              padding: '3px',
+                              borderRadius: '4px',
+                              transition: 'color 0.15s',
                             }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#DC2626'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#9C8B7E'; }}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -830,17 +928,22 @@ export default function StokBahanPage() {
         {/* Footer */}
         {filteredIngredients.length > 0 && (
           <div style={{
-            padding: '12px 20px', borderTop: '1px solid #F1F5F9',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#FAFAFA', fontSize: '12.5px', color: '#64748B',
+            padding: '12px 18px',
+            borderTop: '1px solid #E6DED4',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: '#FAF7F2',
+            fontSize: '12px',
+            color: '#7D6B5C',
           }}>
-            <span>Menampilkan <strong>{filteredIngredients.length}</strong> bahan baku</span>
-            <span>Bahan Perlu Belanja Ulang: <strong style={{ color: '#EF4444' }}>{ingredients.filter(i => i.status === 'Kritis').length}</strong> item</span>
+            <span>Menampilkan {filteredIngredients.length} item bahan dapur</span>
+            <span>Bahan kritis perlu belanja ulang: <strong style={{ color: '#DC2626' }}>{bahanKritis}</strong> item</span>
           </div>
         )}
       </div>
 
-      {/* Modal Form Tambah / Edit */}
+      {/* Modals */}
       {modalState.isOpen && (
         <IngredientFormModal
           item={modalState.item}
@@ -849,7 +952,6 @@ export default function StokBahanPage() {
         />
       )}
 
-      {/* Modal Konfirmasi Hapus */}
       {deleteTarget && (
         <DeleteModal
           item={deleteTarget}

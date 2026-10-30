@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
-  Wallet, TrendingUp, TrendingDown, Plus, DollarSign,
-  Search, Filter, Calendar, RotateCcw, Trash2, X,
-  ChevronDown, Tag, FileText, AlertTriangle,
+  Plus, Search, Filter, Calendar, RotateCcw, Trash2, X,
+  ChevronDown, Tag, FileText, AlertTriangle, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 
 // ─── Dummy Data ────────────────────────────────────────────────────────────────
@@ -49,43 +48,6 @@ function localDateTime() {
 let _idCounter = initialTransactions.length + 1;
 function nextId() { return _idCounter++; }
 
-// ─── Komponen Kartu Summary ───────────────────────────────────────────────────
-
-function SummaryCard({ icon: Icon, label, value, accent, bg, sub }) {
-  return (
-    <div
-      style={{
-        background: 'white', borderRadius: '12px',
-        padding: '20px 22px', border: '1px solid #E2E8F0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        borderLeft: `4px solid ${accent}`,
-        transition: 'transform 0.15s, box-shadow 0.15s',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(99,102,241,0.10)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-        <span style={{ fontSize: '12.5px', color: '#64748B', fontWeight: '600' }}>{label}</span>
-        <div style={{ background: bg, borderRadius: '9px', padding: '8px', display: 'flex' }}>
-          <Icon size={18} color={accent} />
-        </div>
-      </div>
-      <div style={{ fontSize: '22px', fontWeight: '800', color: accent, letterSpacing: '-0.3px' }}>
-        {value}
-      </div>
-      {sub && (
-        <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '4px' }}>{sub}</div>
-      )}
-    </div>
-  );
-}
-
 // ─── Modal Form Transaksi ─────────────────────────────────────────────────────
 
 function TransactionModal({ onClose, onSubmit }) {
@@ -118,97 +80,105 @@ function TransactionModal({ onClose, onSubmit }) {
   };
 
   const fieldStyle = (hasError) => ({
-    width: '100%', padding: '10px 12px',
-    border: `1.5px solid ${hasError ? '#EF4444' : '#E2E8F0'}`,
-    borderRadius: '9px', fontSize: '14px',
-    outline: 'none', boxSizing: 'border-box',
+    width: '100%',
+    padding: '9px 12px',
+    borderRadius: '8px',
+    border: `1px solid ${hasError ? '#DC2626' : '#E6DED4'}`,
+    background: '#FFFFFF',
+    fontSize: '13.5px',
+    color: '#241B14',
+    outline: 'none',
+    boxSizing: 'border-box',
     fontFamily: 'inherit',
     transition: 'border-color 0.15s',
   });
 
   const labelStyle = {
-    display: 'block', fontSize: '12.5px',
-    fontWeight: '600', color: '#64748B', marginBottom: '6px',
+    display: 'block',
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#6E5D4F',
+    marginBottom: '5px',
   };
 
   const isIncome = form.tipe === 'pemasukan';
 
   return (
     <>
-      {/* Backdrop */}
       <div onClick={onClose} style={{
-        position: 'fixed', inset: 0, zIndex: 999,
-        background: 'rgba(15, 23, 42, 0.45)',
-        backdropFilter: 'blur(3px)',
-        animation: 'fadeInKeu 0.15s ease',
+        position: 'fixed', inset: 0, zIndex: 1099,
+        background: 'rgba(36, 27, 20, 0.45)', backdropFilter: 'blur(2px)',
       }} />
-      <style>{`
-        @keyframes fadeInKeu  { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUpKeu { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-
-      {/* Modal */}
       <div style={{
-        position: 'fixed', zIndex: 1000,
+        position: 'fixed', zIndex: 1100,
         top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: 'min(520px, calc(100vw - 48px))',
-        maxHeight: 'calc(100vh - 80px)',
-        background: '#FFFFFF', borderRadius: '16px',
-        boxShadow: '0 20px 60px rgba(30, 27, 75, 0.20)',
-        overflow: 'hidden', display: 'flex', flexDirection: 'column',
-        animation: 'slideUpKeu 0.2s ease',
+        width: 'min(440px, calc(100vw - 32px))',
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        boxShadow: '0 16px 40px rgba(36, 27, 20, 0.12)',
+        overflow: 'hidden',
       }}>
         {/* Header */}
         <div style={{
-          padding: '20px 24px', borderBottom: '1px solid #F1F5F9',
-          background: isIncome
-            ? 'linear-gradient(135deg, #064E3B, #059669)'
-            : 'linear-gradient(135deg, #7F1D1D, #DC2626)',
+          padding: '18px 24px',
+          borderBottom: '1px solid #EFEAE3',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div>
-            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: '500', marginBottom: '3px' }}>
-              Catat Transaksi Baru
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#FFFFFF' }}>
-              {isIncome ? '↑ Pemasukan' : '↓ Pengeluaran'}
-            </div>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#241B14', margin: '0 0 2px' }}>
+              Catat Transaksi Keuangan
+            </h2>
+            <p style={{ fontSize: '12px', color: '#8C7A6B', margin: 0 }}>
+              Masukkan pemasukan atau pengeluaran operasional toko
+            </p>
           </div>
           <button onClick={onClose} style={{
-            background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px',
-            width: '34px', height: '34px', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', cursor: 'pointer', color: 'white',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
-          >
-            <X size={16} />
+            background: 'none', border: 'none', color: '#8C7A6B',
+            cursor: 'pointer', padding: '4px', borderRadius: '4px',
+          }}>
+            <X size={18} />
           </button>
         </div>
 
-        {/* Body */}
-        <form onSubmit={handleSubmit} style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-          {/* Tipe toggle */}
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Tipe Selector */}
           <div>
-            <label style={labelStyle}>Tipe Transaksi</label>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              {['pemasukan', 'pengeluaran'].map(t => (
-                <button key={t} type="button"
-                  onClick={() => setForm(f => ({ ...f, tipe: t, kategori: '' }))}
-                  style={{
-                    flex: 1, padding: '10px', borderRadius: '9px',
-                    border: `2px solid ${form.tipe === t ? (t === 'pemasukan' ? '#10B981' : '#EF4444') : '#E2E8F0'}`,
-                    background: form.tipe === t ? (t === 'pemasukan' ? '#D1FAE5' : '#FEE2E2') : 'white',
-                    color: form.tipe === t ? (t === 'pemasukan' ? '#065F46' : '#991B1B') : '#64748B',
-                    fontWeight: '700', fontSize: '13.5px', cursor: 'pointer',
-                    fontFamily: 'inherit', transition: 'all 0.15s',
-                  }}
-                >
-                  {t === 'pemasukan' ? '↑ Pemasukan' : '↓ Pengeluaran'}
-                </button>
-              ))}
+            <label style={labelStyle}>Jenis Arus Kas</label>
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px',
+              background: '#FAF7F2', padding: '4px', borderRadius: '8px', border: '1px solid #EAE4DC',
+            }}>
+              <button
+                type="button"
+                onClick={() => { setForm(f => ({ ...f, tipe: 'pemasukan', kategori: '' })); setErrors({}); }}
+                style={{
+                  padding: '8px', borderRadius: '6px', border: 'none',
+                  background: isIncome ? '#FFFFFF' : 'transparent',
+                  color: isIncome ? '#166534' : '#7D6B5C',
+                  fontWeight: isIncome ? '700' : '500',
+                  fontSize: '13px', cursor: 'pointer',
+                  boxShadow: isIncome ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                }}
+              >
+                + Pemasukan
+              </button>
+              <button
+                type="button"
+                onClick={() => { setForm(f => ({ ...f, tipe: 'pengeluaran', kategori: '' })); setErrors({}); }}
+                style={{
+                  padding: '8px', borderRadius: '6px', border: 'none',
+                  background: !isIncome ? '#FFFFFF' : 'transparent',
+                  color: !isIncome ? '#991B1B' : '#7D6B5C',
+                  fontWeight: !isIncome ? '700' : '500',
+                  fontSize: '13px', cursor: 'pointer',
+                  boxShadow: !isIncome ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                }}
+              >
+                − Pengeluaran
+              </button>
             </div>
           </div>
 
@@ -216,100 +186,93 @@ function TransactionModal({ onClose, onSubmit }) {
           <div>
             <label style={labelStyle}>Nominal (Rp)</label>
             <input
-              type="number" min="1" required
+              type="number"
+              placeholder="Contoh: 150000"
               value={form.nominal}
-              onChange={e => { setForm(f => ({ ...f, nominal: e.target.value })); setErrors(ev => ({ ...ev, nominal: '' })); }}
-              placeholder="Contoh: 500000"
+              onChange={e => {
+                setForm(f => ({ ...f, nominal: e.target.value }));
+                setErrors(ev => ({ ...ev, nominal: '' }));
+              }}
               style={fieldStyle(errors.nominal)}
-              onFocus={e => { if (!errors.nominal) e.target.style.borderColor = '#6366F1'; }}
-              onBlur={e => { if (!errors.nominal) e.target.style.borderColor = '#E2E8F0'; }}
+              onFocus={e => e.target.style.borderColor = '#C25E34'}
+              onBlur={e => e.target.style.borderColor = '#E6DED4'}
             />
-            {errors.nominal && <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px' }}>{errors.nominal}</div>}
+            {errors.nominal && <div style={{ fontSize: '11.5px', color: '#DC2626', marginTop: '3px' }}>{errors.nominal}</div>}
           </div>
 
           {/* Kategori */}
           <div>
             <label style={labelStyle}>Kategori</label>
-            <div style={{ position: 'relative' }}>
-              <select
-                required value={form.kategori}
-                onChange={e => { setForm(f => ({ ...f, kategori: e.target.value })); setErrors(ev => ({ ...ev, kategori: '' })); }}
-                style={{ ...fieldStyle(errors.kategori), appearance: 'none', cursor: 'pointer' }}
-              >
-                <option value="">Pilih Kategori</option>
-                {currentKategori.map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
-              <ChevronDown size={14} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94A3B8' }} />
-            </div>
-            {errors.kategori && <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px' }}>{errors.kategori}</div>}
+            <select
+              value={form.kategori}
+              onChange={e => {
+                setForm(f => ({ ...f, kategori: e.target.value }));
+                setErrors(ev => ({ ...ev, kategori: '' }));
+              }}
+              style={{ ...fieldStyle(errors.kategori), cursor: 'pointer' }}
+            >
+              <option value="">Pilih Kategori...</option>
+              {currentKategori.map(k => (
+                <option key={k} value={k}>{k}</option>
+              ))}
+            </select>
+            {errors.kategori && <div style={{ fontSize: '11.5px', color: '#DC2626', marginTop: '3px' }}>{errors.kategori}</div>}
           </div>
 
-          {/* Tanggal dan jam setempat */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+          {/* Tanggal & Jam */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
             <div>
-              <label htmlFor="transaksi-tanggal" style={labelStyle}>Tanggal</label>
+              <label style={labelStyle}>Tanggal</label>
               <input
-                id="transaksi-tanggal" type="date" required
+                type="date"
                 value={form.tanggal}
                 onChange={e => { setForm(f => ({ ...f, tanggal: e.target.value })); setErrors(ev => ({ ...ev, tanggal: '' })); }}
                 style={fieldStyle(errors.tanggal)}
               />
-              {errors.tanggal && <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px' }}>{errors.tanggal}</div>}
             </div>
             <div>
-              <label htmlFor="transaksi-jam" style={labelStyle}>Jam</label>
+              <label style={labelStyle}>Jam</label>
               <input
-                id="transaksi-jam" type="time" required
+                type="time"
                 value={form.jam}
                 onChange={e => { setForm(f => ({ ...f, jam: e.target.value })); setErrors(ev => ({ ...ev, jam: '' })); }}
                 style={fieldStyle(errors.jam)}
               />
-              {errors.jam && <div style={{ fontSize: '12px', color: '#EF4444', marginTop: '4px' }}>{errors.jam}</div>}
             </div>
           </div>
 
           {/* Catatan */}
           <div>
-            <label style={labelStyle}>Catatan <span style={{ color: '#CBD5E1', fontWeight: '400' }}>(opsional)</span></label>
+            <label style={labelStyle}>Keterangan Catatan <span style={{ color: '#9C8B7E', fontWeight: '400' }}>(opsional)</span></label>
             <input
               type="text"
+              placeholder="Contoh: Beli tepung terigu 25kg..."
               value={form.catatan}
               onChange={e => setForm(f => ({ ...f, catatan: e.target.value }))}
-              placeholder="Keterangan transaksi..."
               style={fieldStyle(false)}
-              onFocus={e => e.target.style.borderColor = '#6366F1'}
-              onBlur={e => e.target.style.borderColor = '#E2E8F0'}
             />
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '4px' }}>
-            <button type="button" onClick={onClose} style={{
-              padding: '10px 20px', border: '1.5px solid #E2E8F0',
-              borderRadius: '9px', background: 'white', cursor: 'pointer',
-              fontWeight: '600', fontSize: '14px', color: '#64748B',
-              fontFamily: 'inherit', transition: 'background 0.12s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
-            onMouseLeave={e => e.currentTarget.style.background = 'white'}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '8px 16px', borderRadius: '8px', border: '1px solid #E6DED4',
+                background: '#FFFFFF', color: '#5C4A3C', fontSize: '13px', fontWeight: '600',
+                cursor: 'pointer',
+              }}
             >
               Batal
             </button>
-            <button type="submit" style={{
-              padding: '10px 24px',
-              background: isIncome
-                ? 'linear-gradient(135deg, #059669, #10B981)'
-                : 'linear-gradient(135deg, #DC2626, #EF4444)',
-              color: 'white', border: 'none', borderRadius: '9px',
-              fontWeight: '700', fontSize: '14px', cursor: 'pointer',
-              fontFamily: 'inherit',
-              boxShadow: isIncome
-                ? '0 3px 10px rgba(16,185,129,0.30)'
-                : '0 3px 10px rgba(239,68,68,0.30)',
-              transition: 'transform 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+            <button
+              type="submit"
+              style={{
+                padding: '8px 18px', borderRadius: '8px', border: 'none',
+                background: '#241B14', color: '#FFFFFF', fontSize: '13px', fontWeight: '600',
+                cursor: 'pointer',
+              }}
             >
               Simpan Transaksi
             </button>
@@ -320,7 +283,7 @@ function TransactionModal({ onClose, onSubmit }) {
   );
 }
 
-// ─── Konfirmasi Hapus ─────────────────────────────────────────────────────────
+// ─── Modal Konfirmasi Hapus ───────────────────────────────────────────────────
 
 function DeleteConfirmModal({ tx, onClose, onConfirm }) {
   if (!tx) return null;
@@ -328,51 +291,52 @@ function DeleteConfirmModal({ tx, onClose, onConfirm }) {
     <>
       <div onClick={onClose} style={{
         position: 'fixed', inset: 0, zIndex: 1099,
-        background: 'rgba(15, 23, 42, 0.50)', backdropFilter: 'blur(3px)',
+        background: 'rgba(36, 27, 20, 0.45)', backdropFilter: 'blur(2px)',
       }} />
       <div style={{
         position: 'fixed', zIndex: 1100,
         top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: 'min(380px, calc(100vw - 48px))',
-        background: '#FFFFFF', borderRadius: '14px',
-        boxShadow: '0 20px 50px rgba(30, 27, 75, 0.18)',
-        padding: '28px 28px 24px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px',
+        width: 'min(360px, calc(100vw - 32px))',
+        background: '#FFFFFF', borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        boxShadow: '0 16px 40px rgba(36, 27, 20, 0.14)',
+        padding: '24px 24px 20px',
         textAlign: 'center',
       }}>
         <div style={{
-          width: '54px', height: '54px', borderRadius: '50%',
-          background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: '44px', height: '44px', borderRadius: '50%',
+          background: '#FEF2F2', margin: '0 auto 12px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <AlertTriangle size={26} color="#EF4444" />
+          <AlertTriangle size={22} color="#DC2626" />
         </div>
-        <div>
-          <div style={{ fontSize: '16px', fontWeight: '700', color: '#1E293B', marginBottom: '6px' }}>
-            Hapus Transaksi?
-          </div>
-          <div style={{ fontSize: '13.5px', color: '#64748B', lineHeight: 1.5 }}>
-            <strong style={{ color: '#EF4444' }}>{tx.catatan || tx.kategori}</strong> senilai{' '}
-            <strong>{formatRupiah(tx.nominal)}</strong> akan dihapus permanen.
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
-          <button onClick={onClose} style={{
-            padding: '9px 22px', borderRadius: '9px',
-            border: '1.5px solid #E2E8F0', background: 'white',
-            fontWeight: '600', fontSize: '14px', cursor: 'pointer',
-            color: '#64748B', fontFamily: 'inherit',
-          }}>
+        <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#241B14', margin: '0 0 6px' }}>
+          Hapus Transaksi?
+        </h3>
+        <p style={{ fontSize: '13px', color: '#6E5D4F', margin: '0 0 16px', lineHeight: 1.4 }}>
+          Transaksi <strong>{tx.catatan || tx.kategori}</strong> senilai{' '}
+          <strong style={{ color: '#DC2626' }}>{formatRupiah(tx.nominal)}</strong> akan dihapus dari buku kas.
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '8px 16px', borderRadius: '8px', border: '1px solid #E6DED4',
+              background: '#FFFFFF', color: '#5C4A3C', fontSize: '13px', fontWeight: '600',
+              cursor: 'pointer',
+            }}
+          >
             Batal
           </button>
-          <button onClick={() => { onConfirm(tx.id); onClose(); }} style={{
-            padding: '9px 22px', borderRadius: '9px',
-            background: 'linear-gradient(135deg, #DC2626, #EF4444)',
-            color: 'white', border: 'none',
-            fontWeight: '700', fontSize: '14px', cursor: 'pointer',
-            fontFamily: 'inherit',
-            boxShadow: '0 3px 10px rgba(239,68,68,0.30)',
-          }}>
+          <button
+            onClick={() => { onConfirm(tx.id); onClose(); }}
+            style={{
+              padding: '8px 18px', borderRadius: '8px', border: 'none',
+              background: '#DC2626', color: '#FFFFFF', fontSize: '13px', fontWeight: '600',
+              cursor: 'pointer',
+            }}
+          >
             Ya, Hapus
           </button>
         </div>
@@ -381,14 +345,14 @@ function DeleteConfirmModal({ tx, onClose, onConfirm }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page Component ──────────────────────────────────────────────────────
 
 export default function KeuanganPage() {
   const [transactions, setTransactions] = useState(initialTransactions);
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // Filter states
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTipe, setFilterTipe] = useState('');
   const [filterKategori, setFilterKategori] = useState('');
@@ -405,10 +369,12 @@ export default function KeuanganPage() {
     setDateTo('');
   };
 
-  // Summary (selalu dari data lengkap, tidak dipengaruhi filter)
+  // Metrics
   const totalPemasukan   = transactions.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + t.nominal, 0);
   const totalPengeluaran = transactions.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + t.nominal, 0);
   const saldo            = totalPemasukan - totalPengeluaran;
+  const countIn          = transactions.filter(t => t.tipe === 'pemasukan').length;
+  const countOut         = transactions.filter(t => t.tipe === 'pengeluaran').length;
 
   const filteredTx = useMemo(() => transactions.filter(tx => {
     const matchSearch   = tx.catatan.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -428,346 +394,526 @@ export default function KeuanganPage() {
     setTransactions(prev => prev.filter(t => t.id !== id));
   };
 
-  // Subtotal filtered
   const filteredPemasukan   = filteredTx.filter(t => t.tipe === 'pemasukan').reduce((s, t) => s + t.nominal, 0);
   const filteredPengeluaran = filteredTx.filter(t => t.tipe === 'pengeluaran').reduce((s, t) => s + t.nominal, 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{
+      maxWidth: '1280px',
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '24px',
+      color: '#241B14',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    }}>
 
-      {/* ── [A] Header ──────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* ── [1] HEADER ──────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '16px',
+        paddingBottom: '4px',
+      }}>
+        <div>
           <div style={{
-            width: '44px', height: '44px', borderRadius: '12px',
-            background: 'linear-gradient(135deg, #6366F1, #312E81)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(99,102,241,0.30)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px',
+            color: '#8C7A6B',
+            fontWeight: '600',
+            letterSpacing: '0.02em',
+            marginBottom: '4px',
           }}>
-            <Wallet size={22} color="white" />
+            <span>ERLES BAKERY</span>
+            <span style={{ color: '#D4C5B9' }}>/</span>
+            <span>BUKU KAS & ARUS KAS</span>
           </div>
-          <div>
-            <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#1E1B4B', margin: 0, letterSpacing: '-0.3px' }}>
-              Keuangan
-            </h1>
-            <p style={{ fontSize: '13px', color: '#94A3B8', margin: 0 }}>
-              {transactions.length} transaksi tercatat
-            </p>
+
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '700',
+            color: '#241B14',
+            margin: '0 0 6px 0',
+            letterSpacing: '-0.02em',
+          }}>
+            Laporan Keuangan & Kas Toko
+          </h1>
+
+          <div style={{ fontSize: '13px', color: '#6E5D4F' }}>
+            {saldo >= 0 ? (
+              <span style={{ color: '#166534', fontWeight: '600' }}>
+                ✓ Arus kas positif ({formatRupiah(saldo)} saldo bersih)
+              </span>
+            ) : (
+              <span style={{ color: '#DC2626', fontWeight: '600' }}>
+                ⚠ Pengeluaran melebihi pemasukan ({formatRupiah(Math.abs(saldo))})
+              </span>
+            )}
+            <span style={{ color: '#D4C5B9', margin: '0 8px' }}>•</span>
+            <span>{transactions.length} transaksi tercatat secara berurutan</span>
           </div>
         </div>
 
         <button
           onClick={() => setShowForm(true)}
           style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '10px 20px',
-            background: 'linear-gradient(135deg, #6366F1, #312E81)',
-            color: 'white', border: 'none', borderRadius: '10px',
-            fontWeight: '700', fontSize: '14px', cursor: 'pointer',
-            boxShadow: '0 3px 10px rgba(99,102,241,0.30)',
-            transition: 'transform 0.15s, box-shadow 0.15s',
-            fontFamily: 'inherit',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            borderRadius: '8px',
+            border: 'none',
+            background: '#241B14',
+            color: '#FFFFFF',
+            fontSize: '13px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'background 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(99,102,241,0.40)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 3px 10px rgba(99,102,241,0.30)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#3D2D22'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#241B14'; }}
         >
-          <Plus size={17} />
+          <Plus size={15} />
           Catat Transaksi
         </button>
       </div>
 
-      {/* ── [B] Summary Cards ───────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px' }}>
-        <SummaryCard
-          icon={TrendingUp} label="Total Pemasukan"
-          value={formatRupiah(totalPemasukan)}
-          accent="#10B981" bg="#D1FAE5"
-          sub={`${transactions.filter(t => t.tipe === 'pemasukan').length} transaksi masuk`}
-        />
-        <SummaryCard
-          icon={TrendingDown} label="Total Pengeluaran"
-          value={formatRupiah(totalPengeluaran)}
-          accent="#EF4444" bg="#FEE2E2"
-          sub={`${transactions.filter(t => t.tipe === 'pengeluaran').length} transaksi keluar`}
-        />
-        <SummaryCard
-          icon={DollarSign} label="Saldo Bersih"
-          value={formatRupiah(saldo)}
-          accent={saldo >= 0 ? '#6366F1' : '#EF4444'}
-          bg={saldo >= 0 ? '#E0E7FF' : '#FEE2E2'}
-          sub={saldo >= 0 ? 'Kondisi keuangan sehat ✓' : '⚠ Pengeluaran melebihi pemasukan'}
-        />
+      {/* ── [2] UNIFIED METRIC STRIP ─────────────────────────────────── */}
+      <div style={{
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
+      }}>
+        {/* Metric 1: Saldo Kas Bersih (Primary Focal Metric) */}
+        <div style={{ padding: '20px 24px', borderRight: '1px solid #EFEAE3' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Saldo Kas Bersih
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: saldo >= 0 ? '#166534' : '#DC2626',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {formatRupiah(saldo)}
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Selisih penerimaan vs pengeluaran toko
+          </div>
+        </div>
+
+        {/* Metric 2: Total Pemasukan */}
+        <div style={{ padding: '20px 24px', borderRight: '1px solid #EFEAE3' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Total Pemasukan
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {formatRupiah(totalPemasukan)}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#166534' }}>
+            <ArrowUpRight size={13} />
+            <span>{countIn} transaksi masuk</span>
+          </div>
+        </div>
+
+        {/* Metric 3: Total Pengeluaran */}
+        <div style={{ padding: '20px 24px', borderRight: '1px solid #EFEAE3' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Total Pengeluaran
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {formatRupiah(totalPengeluaran)}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#B45309' }}>
+            <ArrowDownRight size={13} />
+            <span>{countOut} pengeluaran bahan & operasional</span>
+          </div>
+        </div>
+
+        {/* Metric 4: Rasio Kas */}
+        <div style={{ padding: '20px 24px' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Rasio Operasional
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {totalPemasukan > 0 ? Math.round((totalPengeluaran / totalPemasukan) * 100) : 0}%
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Beban biaya terhadap omzet kas
+          </div>
+        </div>
       </div>
 
-      {/* ── [C] Filter Bar ──────────────────────────────────────────── */}
+      {/* ── [3] FILTER CONTROLS ──────────────────────────────────────── */}
       <div style={{
-        background: 'white', borderRadius: '12px',
-        border: '1px solid #E2E8F0', padding: '16px 20px',
-        display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        padding: '14px 18px',
+        display: 'flex',
+        gap: '12px',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.02)',
       }}>
         {/* Search */}
-        <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+        <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
+          <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#9C8B7E' }} />
           <input
-            type="text" placeholder="Cari catatan atau kategori..."
-            value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+            type="text"
+            placeholder="Cari transaksi atau kategori..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
             style={{
-              width: '100%', padding: '9px 12px 9px 38px',
-              border: '1.5px solid #E2E8F0', borderRadius: '9px',
-              fontSize: '13.5px', outline: 'none', boxSizing: 'border-box',
-              fontFamily: 'inherit', transition: 'border-color 0.15s',
+              width: '100%',
+              padding: '8px 12px 8px 34px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '13px',
+              color: '#241B14',
+              outline: 'none',
+              boxSizing: 'border-box',
+              background: '#FAF7F2',
             }}
-            onFocus={e => e.target.style.borderColor = '#6366F1'}
-            onBlur={e => e.target.style.borderColor = '#E2E8F0'}
           />
         </div>
 
         {/* Filter Tipe */}
-        <div style={{ position: 'relative', minWidth: '148px' }}>
-          <Filter size={14} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+        <div style={{ minWidth: '135px' }}>
           <select
-            value={filterTipe} onChange={e => setFilterTipe(e.target.value)}
+            value={filterTipe}
+            onChange={e => setFilterTipe(e.target.value)}
             style={{
-              width: '100%', padding: '9px 30px 9px 32px',
-              border: '1.5px solid #E2E8F0', borderRadius: '9px',
-              fontSize: '13.5px', outline: 'none', appearance: 'none',
-              background: 'white', cursor: 'pointer', fontFamily: 'inherit',
-              color: filterTipe ? '#1E293B' : '#94A3B8',
+              width: '100%',
+              padding: '8px 10px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '12.5px',
+              color: '#4A3B30',
+              background: '#FAF7F2',
+              cursor: 'pointer',
+              outline: 'none',
             }}
           >
-            <option value="">Semua Tipe</option>
+            <option value="">Semua Arus Kas</option>
             <option value="pemasukan">↑ Pemasukan</option>
             <option value="pengeluaran">↓ Pengeluaran</option>
           </select>
-          <ChevronDown size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94A3B8' }} />
         </div>
 
         {/* Filter Kategori */}
-        <div style={{ position: 'relative', minWidth: '155px' }}>
-          <Tag size={14} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+        <div style={{ minWidth: '140px' }}>
           <select
-            value={filterKategori} onChange={e => setFilterKategori(e.target.value)}
+            value={filterKategori}
+            onChange={e => setFilterKategori(e.target.value)}
             style={{
-              width: '100%', padding: '9px 30px 9px 32px',
-              border: '1.5px solid #E2E8F0', borderRadius: '9px',
-              fontSize: '13.5px', outline: 'none', appearance: 'none',
-              background: 'white', cursor: 'pointer', fontFamily: 'inherit',
-              color: filterKategori ? '#1E293B' : '#94A3B8',
+              width: '100%',
+              padding: '8px 10px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '12.5px',
+              color: '#4A3B30',
+              background: '#FAF7F2',
+              cursor: 'pointer',
+              outline: 'none',
             }}
           >
             <option value="">Semua Kategori</option>
             {allKategori.map(k => <option key={k} value={k}>{k}</option>)}
           </select>
-          <ChevronDown size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94A3B8' }} />
         </div>
 
-        {/* Rentang tanggal, termasuk kedua batasnya */}
-        {[
-          { id: 'filter-dari', label: 'Dari', value: dateFrom, onChange: value => { setDateFrom(value); if (dateTo && value && value > dateTo) setDateTo(''); } },
-          { id: 'filter-sampai', label: 'Sampai', value: dateTo, onChange: setDateTo, min: dateFrom || undefined },
-        ].map(filter => (
-          <div key={filter.id} style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: '190px' }}>
-            <label htmlFor={filter.id} style={{ color: '#64748B', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap' }}>
-              {filter.label}
-            </label>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Calendar size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
-              <input
-                id={filter.id} type="date" value={filter.value}
-                min={filter.min} max={filter.max}
-                onChange={e => filter.onChange(e.target.value)}
-                style={{
-                  width: '100%', padding: '9px 8px 9px 30px',
-                  border: '1.5px solid #E2E8F0', borderRadius: '9px',
-                  fontSize: '13px', outline: 'none', boxSizing: 'border-box',
-                  background: 'white', cursor: 'pointer', fontFamily: 'inherit', color: '#1E293B',
-                }}
-              />
-            </div>
-          </div>
-        ))}
+        {/* Date From & To */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            style={{
+              padding: '7px 9px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '12px',
+              color: '#4A3B30',
+              background: '#FAF7F2',
+            }}
+          />
+          <span style={{ fontSize: '12px', color: '#9C8B7E' }}>s/d</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            style={{
+              padding: '7px 9px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '12px',
+              color: '#4A3B30',
+              background: '#FAF7F2',
+            }}
+          />
+        </div>
 
-        {/* Reset */}
+        {/* Reset Button */}
         {hasActiveFilter && (
-          <button onClick={resetFilters} style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '9px 14px', borderRadius: '9px',
-            border: '1.5px solid #EEF2FF', background: '#EEF2FF',
-            color: '#6366F1', fontSize: '13px', fontWeight: '600',
-            cursor: 'pointer', fontFamily: 'inherit',
-            transition: 'background 0.15s', whiteSpace: 'nowrap',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = '#E0E7FF'}
-          onMouseLeave={e => e.currentTarget.style.background = '#EEF2FF'}
+          <button
+            onClick={resetFilters}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '7px 11px',
+              borderRadius: '7px',
+              border: '1px solid #E6DED4',
+              background: '#FFFFFF',
+              color: '#7D6B5C',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+            }}
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={12} />
             Reset
           </button>
         )}
 
         {/* Counter */}
-        <div style={{ marginLeft: 'auto', fontSize: '13px', color: '#94A3B8', whiteSpace: 'nowrap' }}>
+        <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#8C7A6B' }}>
           {filteredTx.length} dari {transactions.length} transaksi
         </div>
       </div>
 
-      {/* ── [D] Tabel Transaksi ─────────────────────────────────────── */}
+      {/* ── [4] BUKU KAS TRANSAKSI (Honest Table Ledger) ─────────────── */}
       <div style={{
-        background: 'white', borderRadius: '14px',
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
         overflow: 'hidden',
       }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: '13px',
+            textAlign: 'left',
+          }}>
             <thead>
-              <tr style={{ background: '#F8FAFC' }}>
-                {['Tanggal & Jam', 'Tipe', 'Kategori', 'Catatan', 'Nominal', 'Aksi'].map(h => (
-                  <th key={h} style={{
-                    padding: '13px 16px', textAlign: 'left',
-                    fontWeight: '700', color: '#64748B', fontSize: '12px',
-                    borderBottom: '1px solid #E2E8F0',
-                    whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.4px',
-                  }}>{h}</th>
-                ))}
+              <tr style={{
+                background: '#FAF7F2',
+                borderBottom: '1px solid #E6DED4',
+                color: '#6E5D4F',
+                fontSize: '12px',
+                fontWeight: '600',
+              }}>
+                <th style={{ padding: '11px 18px' }}>Tanggal & Waktu</th>
+                <th style={{ padding: '11px 18px' }}>Jenis</th>
+                <th style={{ padding: '11px 18px' }}>Kategori</th>
+                <th style={{ padding: '11px 18px' }}>Keterangan Catatan</th>
+                <th style={{ padding: '11px 18px', textAlign: 'right' }}>Nominal</th>
+                <th style={{ padding: '11px 18px', textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filteredTx.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: '56px 24px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                      <div style={{
-                        width: '56px', height: '56px', borderRadius: '14px',
-                        background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <FileText size={24} color="#CBD5E1" />
-                      </div>
-                      <div style={{ fontSize: '15px', fontWeight: '700', color: '#94A3B8' }}>
+                  <td colSpan={6} style={{ padding: '48px 24px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <FileText size={28} color="#D4C5B9" />
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#7D6B5C' }}>
                         Tidak ada transaksi ditemukan
                       </div>
-                      <div style={{ fontSize: '13px', color: '#CBD5E1' }}>
-                        Coba ubah filter atau kata kunci pencarian.
+                      <div style={{ fontSize: '12px', color: '#9C8B7E' }}>
+                        Sesuaikan kata kunci atau rentang tanggal filter.
                       </div>
                     </div>
                   </td>
                 </tr>
               ) : (
-                filteredTx.map(tx => (
-                  <tr key={tx.id}
-                    style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.12s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#FAFAFF'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                  >
-                    {/* Tanggal */}
-                    <td style={{ padding: '14px 16px', color: '#64748B', whiteSpace: 'nowrap', fontSize: '13px' }}>
-                      <div>{tx.tanggal}</div>
-                      <div style={{ color: '#94A3B8', fontSize: '12px', marginTop: '3px' }}>{tx.jam}</div>
-                    </td>
+                filteredTx.map(tx => {
+                  const isIncome = tx.tipe === 'pemasukan';
 
-                    {/* Tipe badge */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '5px',
-                        padding: '4px 11px', borderRadius: '20px', fontSize: '12px', fontWeight: '700',
-                        backgroundColor: tx.tipe === 'pemasukan' ? '#D1FAE5' : '#FEE2E2',
-                        color:           tx.tipe === 'pemasukan' ? '#065F46' : '#991B1B',
-                      }}>
+                  return (
+                    <tr
+                      key={tx.id}
+                      style={{
+                        borderBottom: '1px solid #F3EDE6',
+                        transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#FAF7F2'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
+                    >
+                      {/* Tanggal & Waktu */}
+                      <td style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: '600', color: '#241B14' }}>{tx.tanggal}</div>
+                        <div style={{ color: '#9C8B7E', fontSize: '11.5px', marginTop: '2px' }}>{tx.jam} WIB</div>
+                      </td>
+
+                      {/* Jenis Badge */}
+                      <td style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}>
                         <span style={{
-                          width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
-                          background: tx.tipe === 'pemasukan' ? '#10B981' : '#EF4444',
-                        }} />
-                        {tx.tipe === 'pemasukan' ? 'Masuk' : 'Keluar'}
-                      </span>
-                    </td>
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: isIncome ? '#F0FDF4' : '#FEF2F2',
+                          color: isIncome ? '#166534' : '#991B1B',
+                          fontSize: '11.5px',
+                          fontWeight: '600',
+                        }}>
+                          <span style={{
+                            width: '5px',
+                            height: '5px',
+                            borderRadius: '50%',
+                            background: isIncome ? '#16A34A' : '#DC2626',
+                          }} />
+                          {isIncome ? 'Pemasukan' : 'Pengeluaran'}
+                        </span>
+                      </td>
 
-                    {/* Kategori */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '3px 10px', borderRadius: '6px',
-                        background: '#F1F5F9', color: '#475569',
-                        fontSize: '12.5px', fontWeight: '600',
+                      {/* Kategori */}
+                      <td style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '2px 7px',
+                          borderRadius: '4px',
+                          background: '#F7F3EE',
+                          color: '#5C4A3C',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                        }}>
+                          {tx.kategori}
+                        </span>
+                      </td>
+
+                      {/* Keterangan */}
+                      <td style={{ padding: '12px 18px', color: '#6E5D4F', maxWidth: '280px' }}>
+                        <div style={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {tx.catatan || <span style={{ color: '#D4C5B9', fontStyle: 'italic' }}>—</span>}
+                        </div>
+                      </td>
+
+                      {/* Nominal (Right-aligned, tabular figures) */}
+                      <td style={{
+                        padding: '12px 18px',
+                        textAlign: 'right',
+                        fontWeight: '700',
+                        color: isIncome ? '#166534' : '#241B14',
+                        fontVariantNumeric: 'tabular-nums',
+                        whiteSpace: 'nowrap',
                       }}>
-                        {tx.kategori}
-                      </span>
-                    </td>
+                        {isIncome ? '+' : '−'} {formatRupiah(tx.nominal)}
+                      </td>
 
-                    {/* Catatan */}
-                    <td style={{ padding: '14px 16px', color: '#64748B', maxWidth: '220px' }}>
-                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {tx.catatan || <span style={{ color: '#CBD5E1', fontStyle: 'italic' }}>—</span>}
-                      </div>
-                    </td>
-
-                    {/* Nominal */}
-                    <td style={{
-                      padding: '14px 16px', fontWeight: '800',
-                      color: tx.tipe === 'pemasukan' ? '#10B981' : '#EF4444',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {tx.tipe === 'pemasukan' ? '+' : '-'}{formatRupiah(tx.nominal)}
-                    </td>
-
-                    {/* Aksi hapus */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <button
-                        onClick={() => setDeleteTarget(tx)}
-                        title="Hapus transaksi"
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          width: '34px', height: '34px', borderRadius: '8px',
-                          border: '1.5px solid #FEE2E2', background: '#FEF2F2',
-                          color: '#EF4444', cursor: 'pointer',
-                          transition: 'background 0.12s, border-color 0.12s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.borderColor = '#FECACA'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.borderColor = '#FEE2E2'; }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      {/* Aksi Hapus */}
+                      <td style={{ padding: '12px 18px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button
+                          onClick={() => setDeleteTarget(tx)}
+                          title="Hapus transaksi"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#9C8B7E',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            borderRadius: '4px',
+                            transition: 'color 0.15s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.color = '#DC2626'; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = '#9C8B7E'; }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Table Footer */}
+        {/* Table Ledger Footer / Subtotal */}
         {filteredTx.length > 0 && (
           <div style={{
-            padding: '12px 20px', borderTop: '1px solid #F1F5F9',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            flexWrap: 'wrap', gap: '8px', background: '#FAFAFA',
+            padding: '12px 18px',
+            borderTop: '1px solid #E6DED4',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            background: '#FAF7F2',
+            fontSize: '12px',
           }}>
-            <span style={{ fontSize: '12.5px', color: '#94A3B8' }}>
-              Menampilkan {filteredTx.length} dari {transactions.length} transaksi
+            <span style={{ color: '#7D6B5C' }}>
+              Menampilkan {filteredTx.length} baris transaksi
             </span>
-            <div style={{ display: 'flex', gap: '20px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontVariantNumeric: 'tabular-nums',
+            }}>
               {filteredPemasukan > 0 && (
-                <span style={{ fontSize: '12.5px', color: '#10B981', fontWeight: '700' }}>
-                  + {formatRupiah(filteredPemasukan)}
+                <span style={{ color: '#166534', fontWeight: '600' }}>
+                  Masuk: +{formatRupiah(filteredPemasukan)}
                 </span>
               )}
               {filteredPengeluaran > 0 && (
-                <span style={{ fontSize: '12.5px', color: '#EF4444', fontWeight: '700' }}>
-                  − {formatRupiah(filteredPengeluaran)}
+                <span style={{ color: '#6E5D4F', fontWeight: '600' }}>
+                  Keluar: −{formatRupiah(filteredPengeluaran)}
                 </span>
               )}
               <span style={{
-                fontSize: '12.5px', fontWeight: '800',
-                color: (filteredPemasukan - filteredPengeluaran) >= 0 ? '#6366F1' : '#EF4444',
+                color: '#241B14',
+                fontWeight: '700',
+                paddingLeft: '8px',
+                borderLeft: '1px solid #D4C5B9',
               }}>
-                Net: {formatRupiah(filteredPemasukan - filteredPengeluaran)}
+                Bersih: {formatRupiah(filteredPemasukan - filteredPengeluaran)}
               </span>
             </div>
           </div>
         )}
       </div>
 
-      {/* ── Modals ──────────────────────────────────────────────────── */}
+      {/* ── [5] MODALS ───────────────────────────────────────────────── */}
       {showForm && (
         <TransactionModal
           onClose={() => setShowForm(false)}

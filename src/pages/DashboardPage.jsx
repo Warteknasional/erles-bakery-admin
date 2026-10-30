@@ -1,100 +1,15 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ShoppingCart, Clock, CheckCircle, XCircle, AlertCircle,
-  TrendingUp, Wallet, ArrowUpRight, ArrowDownRight,
-  Package, Boxes, ShoppingBag, ArrowRight, ExternalLink,
-  ChevronRight, Store, Smartphone, Globe
+  Clock, CheckCircle2, AlertCircle, XCircle,
+  TrendingUp, ArrowUpRight, ArrowDownRight,
+  Store, Smartphone, Globe, ArrowRight, RefreshCw,
+  Plus, Check, ChevronRight, Flame
 } from 'lucide-react';
 
-// ─── Dummy Data Dashboard ──────────────────────────────────────────────────────
+// ─── Data Toko & Metrik ────────────────────────────────────────────────────────
 
-const statsData = [
-  {
-    label: 'Total Pesanan Hari Ini',
-    value: '24',
-    subtext: '+12% dibanding kemarin',
-    icon: ShoppingCart,
-    accent: '#6366F1',
-    bg: '#EEF2FF',
-    trend: +12,
-  },
-  {
-    label: 'Pesanan Aktif',
-    value: '8',
-    subtext: '3 konfirmasi, 5 diproses',
-    icon: Clock,
-    accent: '#F59E0B',
-    bg: '#FFFBEB',
-    trend: +2,
-  },
-  {
-    label: 'Pendapatan Hari Ini',
-    value: 'Rp 3.450.000',
-    subtext: 'dari 19 transaksi lunas',
-    icon: TrendingUp,
-    accent: '#10B981',
-    bg: '#ECFDF5',
-    trend: +8.5,
-  },
-  {
-    label: 'Saldo Kas Operasional',
-    value: 'Rp 14.850.000',
-    subtext: 'Pemasukan - Pengeluaran',
-    icon: Wallet,
-    accent: '#8B5CF6',
-    bg: '#F5F3FF',
-    trend: +4.2,
-  },
-];
-
-// Data Tren Pendapatan 7 Hari Terakhir
-const incomeTrendData = [
-  { day: 'Senin',   date: '23 Sep', nominal: 2850000 },
-  { day: 'Selasa',  date: '24 Sep', nominal: 3100000 },
-  { day: 'Rabu',    date: '25 Sep', nominal: 2950000 },
-  { day: 'Kamis',   date: '26 Sep', nominal: 3600000 },
-  { day: 'Jumat',   date: '27 Sep', nominal: 4200000 },
-  { day: 'Sabtu',   date: '28 Sep', nominal: 4850000 },
-  { day: 'Minggu',  date: '29 Sep', nominal: 3450000 },
-];
-
-const statusSummaryData = [
-  {
-    key: 'menunggu_konfirmasi',
-    label: 'Menunggu Konfirmasi',
-    count: 3,
-    color: '#F59E0B',
-    bg: '#FEF3C7',
-    icon: Clock,
-  },
-  {
-    key: 'diproses',
-    label: 'Sedang Diproses',
-    count: 5,
-    color: '#3B82F6',
-    bg: '#DBEAFE',
-    icon: AlertCircle,
-  },
-  {
-    key: 'selesai',
-    label: 'Pesanan Selesai',
-    count: 15,
-    color: '#10B981',
-    bg: '#D1FAE5',
-    icon: CheckCircle,
-  },
-  {
-    key: 'dibatalkan',
-    label: 'Dibatalkan',
-    count: 1,
-    color: '#EF4444',
-    bg: '#FEE2E2',
-    icon: XCircle,
-  },
-];
-
-const recentOrders = [
+const initialOrders = [
   {
     id: 'ORD-20240115-001',
     customer: 'Budi Santoso',
@@ -103,7 +18,7 @@ const recentOrders = [
     items: 'Roti Tawar Jumbo (x3), Croissant (x5)',
     total: 250000,
     status: 'menunggu_konfirmasi',
-    time: '10 menit lalu',
+    time: '10 mnt lalu',
   },
   {
     id: 'ORD-20240115-002',
@@ -113,7 +28,7 @@ const recentOrders = [
     items: 'Bolu Kukus Pandan (x2), Kue Sus (x12)',
     total: 180000,
     status: 'diproses',
-    time: '25 menit lalu',
+    time: '25 mnt lalu',
   },
   {
     id: 'ORD-20240115-003',
@@ -147,11 +62,59 @@ const recentOrders = [
   },
 ];
 
+const incomeTrendData = [
+  { day: 'Senin', date: '23 Sep', nominal: 2850000 },
+  { day: 'Selasa', date: '24 Sep', nominal: 3100000 },
+  { day: 'Rabu', date: '25 Sep', nominal: 2950000 },
+  { day: 'Kamis', date: '26 Sep', nominal: 3600000 },
+  { day: 'Jumat', date: '27 Sep', nominal: 4200000 },
+  { day: 'Sabtu', date: '28 Sep', nominal: 4850000 },
+  { day: 'Minggu', date: '29 Sep', nominal: 3450000 },
+];
+
+// Signature element untuk Bakery: Live Sell-out & Batch Status
+const bakerySellOutData = [
+  {
+    name: 'Donat Glazed Klasik',
+    batch: 'Batch 1 (06:00)',
+    baked: 48,
+    sold: 48,
+    status: 'Habis (Sold Out)',
+    badge: 'sold-out',
+  },
+  {
+    name: 'Roti Tawar Gandum Jumbo',
+    batch: 'Batch 1 (06:30)',
+    baked: 30,
+    sold: 28,
+    status: 'Sisa 2 pcs',
+    badge: 'critical',
+  },
+  {
+    name: 'Croissant Butter Artisan',
+    batch: 'Batch 2 (09:00)',
+    baked: 50,
+    sold: 42,
+    status: 'Sisa 8 pcs',
+    badge: 'normal',
+  },
+  {
+    name: 'Bolu Kukus Pandan Suji',
+    batch: 'Batch 2 (10:30)',
+    baked: 20,
+    sold: 14,
+    status: 'Sisa 6 pcs',
+    badge: 'normal',
+  },
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatRupiah(num) {
   return new Intl.NumberFormat('id-ID', {
-    style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
   }).format(num);
 }
 
@@ -160,512 +123,906 @@ function getTodayFormatted() {
   return new Date().toLocaleDateString('id-ID', options);
 }
 
-function getStatusBadgeConfig(status) {
+function getStatusStyle(status) {
   switch (status) {
     case 'menunggu_konfirmasi':
-      return { bg: '#FEF3C7', text: '#92400E', dot: '#F59E0B', label: 'Menunggu Konfirmasi' };
+      return {
+        bg: '#FEF9C3',
+        text: '#854D0E',
+        dot: '#CA8A04',
+        label: 'Perlu Konfirmasi',
+      };
     case 'diproses':
-      return { bg: '#DBEAFE', text: '#1E40AF', dot: '#3B82F6', label: 'Diproses' };
+      return {
+        bg: '#FFF7ED',
+        text: '#9A3412',
+        dot: '#EA580C',
+        label: 'Sedang Diproses',
+      };
     case 'selesai':
-      return { bg: '#D1FAE5', text: '#065F46', dot: '#10B981', label: 'Selesai' };
+      return {
+        bg: '#F0FDF4',
+        text: '#166534',
+        dot: '#16A34A',
+        label: 'Selesai',
+      };
     case 'dibatalkan':
-      return { bg: '#FEE2E2', text: '#991B1B', dot: '#EF4444', label: 'Dibatalkan' };
+      return {
+        bg: '#FEF2F2',
+        text: '#991B1B',
+        dot: '#DC2626',
+        label: 'Dibatalkan',
+      };
     default:
-      return { bg: '#F1F5F9', text: '#475569', dot: '#94A3B8', label: status };
+      return {
+        bg: '#F5F5F4',
+        text: '#57534E',
+        dot: '#78716C',
+        label: status,
+      };
   }
 }
 
-// ─── Sub-Components ───────────────────────────────────────────────────────────
-
-function StatCard({ stat }) {
-  const isUp = stat.trend > 0;
-  const TrendIcon = isUp ? ArrowUpRight : ArrowDownRight;
-  const trendColor = isUp ? '#16A34A' : '#DC2626';
-  const trendBg = isUp ? '#DCFCE7' : '#FEE2E2';
-
-  return (
-    <div
-      style={{
-        background: '#FFFFFF',
-        borderRadius: '16px',
-        padding: '22px 24px',
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-        borderLeft: `4px solid ${stat.accent}`,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        transition: 'all 0.15s ease',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 8px 20px rgba(99,102,241,0.08)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-        <span style={{ fontSize: '13px', color: '#64748B', fontWeight: '600' }}>
-          {stat.label}
-        </span>
-        <div style={{
-          background: stat.bg,
-          borderRadius: '10px',
-          padding: '10px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <stat.icon size={20} color={stat.accent} />
-        </div>
-      </div>
-
-      <div>
-        <div style={{ fontSize: '26px', fontWeight: '800', color: '#1E1B4B', letterSpacing: '-0.4px', marginBottom: '4px' }}>
-          {stat.value}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '2px',
-            background: trendBg, borderRadius: '12px', padding: '2px 6px',
-            fontSize: '11px', fontWeight: '700', color: trendColor,
-          }}>
-            <TrendIcon size={12} />
-            {Math.abs(stat.trend)}%
-          </div>
-          <span style={{ fontSize: '12px', color: '#94A3B8' }}>
-            {stat.subtext}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const [orders, setOrders] = useState(initialOrders);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
+
   const todayStr = useMemo(() => getTodayFormatted(), []);
 
-  // Hitung max nominal untuk kalkulasi grafik tren
+  // Konfirmasi pesanan langsung di tabel
+  const handleConfirmOrder = (orderId) => {
+    setOrders(prev =>
+      prev.map(o => o.id === orderId ? { ...o, status: 'diproses' } : o)
+    );
+  };
+
+  const pendingCount = orders.filter(o => o.status === 'menunggu_konfirmasi').length;
+  const processingCount = orders.filter(o => o.status === 'diproses').length;
+  const completedCount = orders.filter(o => o.status === 'selesai').length;
+
   const maxNominal = Math.max(...incomeTrendData.map(d => d.nominal));
   const totalMingguIni = incomeTrendData.reduce((sum, d) => sum + d.nominal, 0);
+  const avgHarian = Math.round(totalMingguIni / incomeTrendData.length);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 500);
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '32px' }}>
+    <div style={{
+      maxWidth: '1280px',
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '24px',
+      color: '#241B14',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    }}>
 
-      {/* ── [A] HEADER DASHBOARD ─────────────────────────────────────── */}
+      {/* ── [1] PAGE HEADER (Clear Context, Finding & Action) ───────────── */}
       <div style={{
-        background: '#FFFFFF',
-        borderRadius: '16px',
-        padding: '24px 28px',
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '16px',
+        paddingBottom: '4px',
       }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '12.5px', color: '#6366F1', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-              Admin Panel
-            </span>
-            <span style={{ color: '#CBD5E1' }}>•</span>
-            <span style={{ fontSize: '13px', color: '#64748B', fontWeight: '500' }}>
-              {todayStr}
-            </span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px',
+            color: '#8C7A6B',
+            fontWeight: '600',
+            letterSpacing: '0.02em',
+            marginBottom: '4px',
+          }}>
+            <span>ERLES BAKERY</span>
+            <span style={{ color: '#D4C5B9' }}>/</span>
+            <span>OVERVIEW OPERASIONAL</span>
+            <span style={{ color: '#D4C5B9' }}>•</span>
+            <span style={{ color: '#665343' }}>{todayStr}</span>
           </div>
 
-          <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.3px' }}>
-            Dashboard Admin Erles Bakery
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '700',
+            color: '#241B14',
+            margin: '0 0 6px 0',
+            letterSpacing: '-0.02em',
+          }}>
+            Dashboard Toko & Produksi
           </h1>
-          <p style={{ color: '#64748B', fontSize: '13.5px', margin: 0 }}>
-            Selamat datang di Erles Bakery Admin Panel. Pantau kinerja penjualan, status pesanan, dan arus keuangan toko.
-          </p>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '13px',
+            color: '#6E5D4F',
+          }}>
+            {pendingCount > 0 ? (
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                color: '#B45309',
+                fontWeight: '600',
+              }}>
+                <span style={{
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  background: '#D97706',
+                  animation: 'pulse 1.5s infinite',
+                }} />
+                {pendingCount} pesanan membutuhkan konfirmasi dapur
+              </span>
+            ) : (
+              <span style={{ color: '#15803D', fontWeight: '500' }}>
+                ✓ Semua pesanan telah dikonfirmasi
+              </span>
+            )}
+            <span style={{ color: '#D4C5B9' }}>•</span>
+            <span>Pendapatan hari ini berjalan di atas rata-rata (+8.5%)</span>
+          </div>
         </div>
 
-        {/* Quick Action Navigation Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        {/* Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={handleRefresh}
+            title="Muat ulang data"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #E2D9CE',
+              background: '#FFFFFF',
+              color: '#5C4A3C',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'background 0.15s, border-color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#FAF7F2'; e.currentTarget.style.borderColor = '#D1C4B5'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2D9CE'; }}
+          >
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            Perbarui
+          </button>
+
           <button
             onClick={() => navigate('/pesanan')}
             style={{
-              display: 'flex', alignItems: 'center', gap: '7px',
-              padding: '10px 16px', borderRadius: '10px',
-              background: '#6366F1', color: '#FFFFFF', border: 'none',
-              fontSize: '13px', fontWeight: '700', cursor: 'pointer',
-              boxShadow: '0 3px 10px rgba(99,102,241,0.25)',
-              transition: 'all 0.15s ease', fontFamily: 'inherit',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: 'none',
+              background: '#241B14',
+              color: '#FFFFFF',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'background 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#3D2D22'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#241B14'; }}
           >
-            <ShoppingCart size={15} />
-            Lihat Pesanan
-          </button>
-
-          <button
-            onClick={() => navigate('/keuangan')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '7px',
-              padding: '10px 16px', borderRadius: '10px',
-              background: '#FFFFFF', color: '#334155', border: '1.5px solid #E2E8F0',
-              fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-              transition: 'all 0.15s ease', fontFamily: 'inherit',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
-          >
-            <Wallet size={15} color="#6366F1" />
-            Lihat Keuangan
-          </button>
-
-          <button
-            onClick={() => navigate('/produk')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '7px',
-              padding: '10px 16px', borderRadius: '10px',
-              background: '#FFFFFF', color: '#334155', border: '1.5px solid #E2E8F0',
-              fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-              transition: 'all 0.15s ease', fontFamily: 'inherit',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
-          >
-            <ShoppingBag size={15} color="#10B981" />
-            Lihat Produk
-          </button>
-
-          <button
-            onClick={() => navigate('/stok-bahan')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '7px',
-              padding: '10px 16px', borderRadius: '10px',
-              background: '#FFFFFF', color: '#334155', border: '1.5px solid #E2E8F0',
-              fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-              transition: 'all 0.15s ease', fontFamily: 'inherit',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
-          >
-            <Boxes size={15} color="#F59E0B" />
-            Lihat Stok
+            <Plus size={15} />
+            Catat Pesanan
           </button>
         </div>
       </div>
 
-      {/* ── [B] 4 STAT CARDS ────────────────────────────────────────── */}
+      {/* ── [2] UNIFIED METRIC STRIP (Data-first, No Cheesy Circles) ───── */}
       <div style={{
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
-        gap: '16px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
       }}>
-        {statsData.map((stat, idx) => (
-          <StatCard key={idx} stat={stat} />
-        ))}
+        {/* KPI 1: Pendapatan Hari Ini (Primary Focal Metric) */}
+        <div style={{
+          padding: '20px 24px',
+          borderRight: '1px solid #EFEAE3',
+        }}>
+          <div style={{
+            fontSize: '12.5px',
+            fontWeight: '600',
+            color: '#7D6B5C',
+            marginBottom: '8px',
+          }}>
+            Pendapatan Hari Ini
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            Rp 3.450.000
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              color: '#166534',
+              fontWeight: '600',
+              background: '#F0FDF4',
+              padding: '1px 5px',
+              borderRadius: '4px',
+            }}>
+              <ArrowUpRight size={13} />
+              +8.5%
+            </span>
+            <span style={{ color: '#8C7A6B' }}>vs kemarin (19 nota lunas)</span>
+          </div>
+        </div>
+
+        {/* KPI 2: Total Pesanan Masuk */}
+        <div style={{
+          padding: '20px 24px',
+          borderRight: '1px solid #EFEAE3',
+        }}>
+          <div style={{
+            fontSize: '12.5px',
+            fontWeight: '600',
+            color: '#7D6B5C',
+            marginBottom: '8px',
+          }}>
+            Total Pesanan Masuk
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            24 <span style={{ fontSize: '15px', fontWeight: '500', color: '#8C7A6B' }}>pesanan</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              color: '#166534',
+              fontWeight: '600',
+              background: '#F0FDF4',
+              padding: '1px 5px',
+              borderRadius: '4px',
+            }}>
+              <ArrowUpRight size={13} />
+              +12%
+            </span>
+            <span style={{ color: '#8C7A6B' }}>19 selesai • 5 aktif</span>
+          </div>
+        </div>
+
+        {/* KPI 3: Pesanan Perlu Konfirmasi (Queue needing attention) */}
+        <div style={{
+          padding: '20px 24px',
+          borderRight: '1px solid #EFEAE3',
+        }}>
+          <div style={{
+            fontSize: '12.5px',
+            fontWeight: '600',
+            color: '#7D6B5C',
+            marginBottom: '8px',
+          }}>
+            Antrean Dapur & Konfirmasi
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: pendingCount > 0 ? '#B45309' : '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {pendingCount} <span style={{ fontSize: '15px', fontWeight: '500', color: '#8C7A6B' }}>menunggu</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            {processingCount} pesanan sedang dalam pengerjaan
+          </div>
+        </div>
+
+        {/* KPI 4: Kas Operasional Toko */}
+        <div style={{
+          padding: '20px 24px',
+        }}>
+          <div style={{
+            fontSize: '12.5px',
+            fontWeight: '600',
+            color: '#7D6B5C',
+            marginBottom: '8px',
+          }}>
+            Kas Operasional Toko
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            Rp 14.850.000
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Pemasukan tunai & transfer hari ini tercatat
+          </div>
+        </div>
       </div>
 
-      {/* ── [C] GRAFIK TREN PENDAPATAN & RINGKASAN STATUS PESANAN ────── */}
+      {/* ── [3] DUA KOLOM: TREN PENDAPATAN & SELL-OUT STRIP ────────────── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+        gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)',
         gap: '20px',
+        alignItems: 'stretch',
       }}>
-        {/* 1. Grafik Tren Pendapatan 7 Hari Terakhir */}
+        {/* Kolom Kiri: Tren Pendapatan 7 Hari */}
         <div style={{
           background: '#FFFFFF',
-          borderRadius: '16px',
-          border: '1px solid #E2E8F0',
+          borderRadius: '12px',
+          border: '1px solid #E6DED4',
           padding: '22px 24px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
+          boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <TrendingUp size={18} color="#10B981" />
-                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A', margin: 0 }}>
-                  Tren Pendapatan 7 Hari Terakhir
-                </h3>
+          <div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+              marginBottom: '4px',
+            }}>
+              <h2 style={{
+                fontSize: '15px',
+                fontWeight: '700',
+                color: '#241B14',
+                margin: 0,
+              }}>
+                Tren Penjualan 7 Hari Terakhir
+              </h2>
+              <span style={{
+                fontSize: '12.5px',
+                color: '#6E5D4F',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                Total: <strong style={{ color: '#241B14' }}>{formatRupiah(totalMingguIni)}</strong>
+              </span>
+            </div>
+            <p style={{
+              fontSize: '12px',
+              color: '#8C7A6B',
+              margin: '0 0 20px 0',
+            }}>
+              Rata-rata penjualan harian {formatRupiah(avgHarian)} • Puncak penjualan di hari Sabtu
+            </p>
+
+            {/* Crisp Column Chart */}
+            <div style={{
+              height: '175px',
+              display: 'flex',
+              alignItems: 'flex-end',
+              gap: '12px',
+              paddingBottom: '26px',
+              borderBottom: '1px solid #EFEAE3',
+              position: 'relative',
+            }}>
+              {/* Reference Baseline Guide */}
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: `${Math.round((avgHarian / maxNominal) * 149) + 26}px`,
+                borderBottom: '1px dashed #D9CFC4',
+                pointerEvents: 'none',
+              }}>
+                <span style={{
+                  position: 'absolute',
+                  right: 0,
+                  bottom: '2px',
+                  fontSize: '10px',
+                  color: '#9C8B7E',
+                  background: '#FFFFFF',
+                  paddingLeft: '4px',
+                }}>
+                  Rata-rata {formatRupiah(avgHarian)}
+                </span>
               </div>
-              <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '2px' }}>
-                Total pendapatan minggu ini: <strong style={{ color: '#0F172A' }}>{formatRupiah(totalMingguIni)}</strong>
-              </div>
+
+              {incomeTrendData.map((item, idx) => {
+                const heightPx = Math.round((item.nominal / maxNominal) * 140);
+                const isToday = idx === incomeTrendData.length - 1;
+                const isHovered = hoveredBarIndex === idx;
+
+                return (
+                  <div
+                    key={idx}
+                    onMouseEnter={() => setHoveredBarIndex(idx)}
+                    onMouseLeave={() => setHoveredBarIndex(null)}
+                    style={{
+                      flex: 1,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'flex-end',
+                      alignItems: 'center',
+                      position: 'relative',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {/* Tooltip on hover */}
+                    {isHovered && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '-32px',
+                        background: '#241B14',
+                        color: '#FFFFFF',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        padding: '3px 7px',
+                        borderRadius: '4px',
+                        whiteSpace: 'nowrap',
+                        zIndex: 10,
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                      }}>
+                        {item.day}: {formatRupiah(item.nominal)}
+                      </div>
+                    )}
+
+                    {/* Column Bar */}
+                    <div style={{
+                      width: '100%',
+                      maxWidth: '36px',
+                      height: `${heightPx}px`,
+                      borderRadius: '4px 4px 0 0',
+                      background: isToday
+                        ? '#C25E34' // Bakery Terracotta Accent for Today
+                        : isHovered
+                          ? '#A47E65'
+                          : '#D4C3B3', // Muted crust tone for prior days
+                      transition: 'background 0.15s, height 0.2s',
+                    }} />
+
+                    {/* Day Label */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '-22px',
+                      fontSize: '11.5px',
+                      fontWeight: isToday ? '700' : '500',
+                      color: isToday ? '#C25E34' : '#7D6B5C',
+                    }}>
+                      {item.day.slice(0, 3)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: '14px',
+            fontSize: '12px',
+            color: '#8C7A6B',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '9px', height: '9px', background: '#C25E34', borderRadius: '2px' }} />
+                Hari Ini
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '9px', height: '9px', background: '#D4C3B3', borderRadius: '2px' }} />
+                Hari Sebelumnya
+              </span>
             </div>
             <button
               onClick={() => navigate('/keuangan')}
               style={{
-                background: '#EEF2FF', border: 'none', color: '#6366F1',
-                padding: '4px 10px', borderRadius: '8px', fontSize: '12px',
-                fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                background: 'none',
+                border: 'none',
+                color: '#8C5A37',
+                fontSize: '12px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: 0,
               }}
             >
-              Laporan Keuangan <ChevronRight size={13} />
+              Rincian Kas <ChevronRight size={13} />
             </button>
-          </div>
-
-          {/* Bar Chart Visualizer */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: '12px',
-            height: '180px',
-            paddingTop: '20px',
-            borderBottom: '1px solid #F1F5F9',
-          }}>
-            {incomeTrendData.map((item, idx) => {
-              const heightPct = Math.round((item.nominal / maxNominal) * 100);
-              const isToday = idx === incomeTrendData.length - 1;
-
-              return (
-                <div key={idx} style={{
-                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-                  height: '100%', justifyContent: 'flex-end',
-                }}>
-                  {/* Tooltip nominal on hover/static */}
-                  <span style={{
-                    fontSize: '10px', fontWeight: '700',
-                    color: isToday ? '#6366F1' : '#64748B',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {(item.nominal / 1000000).toFixed(1)}jt
-                  </span>
-
-                  {/* Bar */}
-                  <div style={{
-                    width: '100%', maxWidth: '38px',
-                    height: `${heightPct}%`,
-                    minHeight: '8px',
-                    borderRadius: '6px 6px 0 0',
-                    background: isToday
-                      ? 'linear-gradient(180deg, #6366F1 0%, #4338CA 100%)'
-                      : 'linear-gradient(180deg, #A5B4FC 0%, #C7D2FE 100%)',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.filter = 'brightness(1.1)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.filter = 'none';
-                  }}
-                  />
-
-                  {/* Label Hari */}
-                  <div style={{ textAlign: 'center', marginTop: '4px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: isToday ? '700' : '500', color: isToday ? '#1E1B4B' : '#64748B' }}>
-                      {item.day.slice(0, 3)}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', fontSize: '11.5px', color: '#94A3B8' }}>
-            <span>* Diperbarui otomatis dari catatan transaksi penjualan</span>
-            <span style={{ color: '#10B981', fontWeight: '600' }}>✓ Rata-rata harian: {formatRupiah(Math.round(totalMingguIni / 7))}</span>
           </div>
         </div>
 
-        {/* 2. Ringkasan Status Pesanan */}
+        {/* Kolom Kanan: Bakery Signature Element - Sell-Out Strip & Batch Monitor */}
         <div style={{
           background: '#FFFFFF',
-          borderRadius: '16px',
-          border: '1px solid #E2E8F0',
+          borderRadius: '12px',
+          border: '1px solid #E6DED4',
           padding: '22px 24px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
+          boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Package size={18} color="#6366F1" />
-              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A', margin: 0 }}>
-                Ringkasan Status Pesanan
-              </h3>
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: '700', color: '#6366F1', background: '#EEF2FF', padding: '3px 8px', borderRadius: '10px' }}>
-              Total 24 Pesanan
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {statusSummaryData.map((item) => {
-              const totalOrders = 24;
-              const pct = Math.round((item.count / totalOrders) * 100);
-
-              return (
-                <div key={item.key} style={{
-                  background: '#F8FAFC', borderRadius: '12px',
-                  padding: '12px 14px', border: '1px solid #F1F5F9',
+          <div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '4px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Flame size={16} color="#C25E34" />
+                <h2 style={{
+                  fontSize: '15px',
+                  fontWeight: '700',
+                  color: '#241B14',
+                  margin: 0,
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: item.color }} />
-                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#1E293B' }}>
-                        {item.label}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: '800', color: item.color }}>
-                        {item.count}
-                      </span>
-                      <span style={{ fontSize: '11.5px', color: '#94A3B8' }}>
-                        ({pct}%)
-                      </span>
-                    </div>
-                  </div>
+                  Status Produksi & Penjualan Roti
+                </h2>
+              </div>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: '600',
+                color: '#7D6B5C',
+                background: '#F7F3EE',
+                padding: '2px 7px',
+                borderRadius: '4px',
+              }}>
+                Batch Hari Ini
+              </span>
+            </div>
+            <p style={{
+              fontSize: '12px',
+              color: '#8C7A6B',
+              margin: '0 0 16px 0',
+            }}>
+              Pantauan pergerakan stok etalase untuk jadwal pemanggangan berikutnya
+            </p>
 
-                  {/* Mini Progress Bar */}
-                  <div style={{ width: '100%', height: '5px', background: '#E2E8F0', borderRadius: '10px', overflow: 'hidden' }}>
+            {/* List Item Bakery */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {bakerySellOutData.map((item, idx) => {
+                const pct = Math.round((item.sold / item.baked) * 100);
+                const isSoldOut = item.badge === 'sold-out';
+                const isCritical = item.badge === 'critical';
+
+                return (
+                  <div key={idx} style={{
+                    paddingBottom: '10px',
+                    borderBottom: idx < bakerySellOutData.length - 1 ? '1px solid #F3EDE6' : 'none',
+                  }}>
                     <div style={{
-                      width: `${pct}%`, height: '100%',
-                      background: item.color, borderRadius: '10px',
-                    }} />
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      marginBottom: '4px',
+                    }}>
+                      <div>
+                        <span style={{
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          color: '#241B14',
+                        }}>
+                          {item.name}
+                        </span>
+                        <span style={{
+                          fontSize: '11px',
+                          color: '#9C8B7E',
+                          marginLeft: '6px',
+                        }}>
+                          {item.batch}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        fontVariantNumeric: 'tabular-nums',
+                        color: isSoldOut ? '#DC2626' : isCritical ? '#B45309' : '#6E5D4F',
+                        fontWeight: '600',
+                      }}>
+                        {item.sold}/{item.baked} <span style={{ fontWeight: '400', color: '#9C8B7E' }}>({pct}%)</span>
+                      </div>
+                    </div>
+
+                    {/* Minimal Progress Bar */}
+                    <div style={{
+                      height: '5px',
+                      background: '#EFEAE3',
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                      marginTop: '4px',
+                    }}>
+                      <div style={{
+                        width: `${pct}%`,
+                        height: '100%',
+                        background: isSoldOut
+                          ? '#DC2626'
+                          : isCritical
+                            ? '#D97706'
+                            : '#8C5A37',
+                        borderRadius: '3px',
+                      }} />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
-          <div style={{ marginTop: '14px', textAlign: 'center' }}>
-            <button
-              onClick={() => navigate('/pesanan')}
-              style={{
-                width: '100%', padding: '9px', borderRadius: '8px',
-                border: '1.5px solid #E2E8F0', background: '#FFFFFF',
-                color: '#475569', fontSize: '12.5px', fontWeight: '600',
-                cursor: 'pointer', transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; }}
-            >
-              Buka Manajemen Pesanan Lengkap
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/produk')}
+            style={{
+              width: '100%',
+              marginTop: '16px',
+              padding: '8px',
+              borderRadius: '6px',
+              border: '1px solid #E2D9CE',
+              background: '#FAF7F2',
+              color: '#5C4A3C',
+              fontSize: '12.5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#F0E9DF'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#FAF7F2'; }}
+          >
+            Kelola Stok & Katalog Produk <ArrowRight size={13} />
+          </button>
         </div>
       </div>
 
-      {/* ── [D] PESANAN TERBARU ───────────────────────────────────────── */}
+      {/* ── [4] PESANAN MASUK TERBARU (Honest Rules & Alignment) ───────── */}
       <div style={{
         background: '#FFFFFF',
-        borderRadius: '16px',
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
         overflow: 'hidden',
       }}>
+        {/* Table Header Row */}
         <div style={{
-          padding: '20px 24px',
-          borderBottom: '1px solid #F1F5F9',
+          padding: '18px 24px',
+          borderBottom: '1px solid #EFEAE3',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
           <div>
-            <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A', margin: '0 0 2px' }}>
+            <h2 style={{
+              fontSize: '15px',
+              fontWeight: '700',
+              color: '#241B14',
+              margin: '0 0 2px 0',
+            }}>
               Pesanan Masuk Terbaru
-            </h3>
-            <span style={{ fontSize: '12.5px', color: '#64748B' }}>
-              Daftar transaksi pesanan terkini dari berbagai saluran penjualan
-            </span>
+            </h2>
+            <p style={{
+              fontSize: '12px',
+              color: '#8C7A6B',
+              margin: 0,
+            }}>
+              Daftar transaksi pesanan hari ini dari WhatsApp, website, dan gerai toko
+            </p>
           </div>
 
           <button
             onClick={() => navigate('/pesanan')}
             style={{
-              background: 'none', border: 'none', color: '#6366F1',
-              fontSize: '13px', fontWeight: '700', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '4px',
-              fontFamily: 'inherit',
+              background: 'none',
+              border: 'none',
+              color: '#8C5A37',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: 0,
             }}
           >
-            Lihat Semua Pesanan <ArrowRight size={14} />
+            Buka Semua Pesanan <ArrowRight size={14} />
           </button>
         </div>
 
+        {/* Table Content */}
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: '13px',
+            textAlign: 'left',
+          }}>
             <thead>
-              <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                <th style={{ padding: '12px 18px', textAlign: 'left', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>ID Pesanan</th>
-                <th style={{ padding: '12px 18px', textAlign: 'left', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pelanggan</th>
-                <th style={{ padding: '12px 18px', textAlign: 'left', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Sumber</th>
-                <th style={{ padding: '12px 18px', textAlign: 'left', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Ringkasan Item</th>
-                <th style={{ padding: '12px 18px', textAlign: 'right', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Total</th>
-                <th style={{ padding: '12px 18px', textAlign: 'center', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Status</th>
-                <th style={{ padding: '12px 18px', textAlign: 'right', fontWeight: '700', color: '#64748B', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Waktu</th>
+              <tr style={{
+                background: '#FAF7F2',
+                borderBottom: '1px solid #E6DED4',
+                color: '#6E5D4F',
+                fontSize: '12px',
+                fontWeight: '600',
+              }}>
+                <th style={{ padding: '10px 18px' }}>ID Pesanan</th>
+                <th style={{ padding: '10px 18px' }}>Pelanggan</th>
+                <th style={{ padding: '10px 18px' }}>Saluran</th>
+                <th style={{ padding: '10px 18px' }}>Rincian Item</th>
+                <th style={{ padding: '10px 18px', textAlign: 'right' }}>Total</th>
+                <th style={{ padding: '10px 18px', textAlign: 'center' }}>Status</th>
+                <th style={{ padding: '10px 18px' }}>Waktu</th>
+                <th style={{ padding: '10px 18px', textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {recentOrders.map(order => {
-                const badge = getStatusBadgeConfig(order.status);
+              {orders.map(order => {
+                const badge = getStatusStyle(order.status);
                 const SourceIcon = order.sourceIcon;
+                const isPending = order.status === 'menunggu_konfirmasi';
 
                 return (
                   <tr
                     key={order.id}
-                    style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.12s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#FAFAFF'}
+                    style={{
+                      borderBottom: '1px solid #F3EDE6',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#FAF7F2'}
                     onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
                   >
                     {/* ID */}
-                    <td style={{ padding: '13px 18px', fontWeight: '700', color: '#6366F1', whiteSpace: 'nowrap' }}>
+                    <td style={{
+                      padding: '12px 18px',
+                      fontWeight: '600',
+                      color: '#6E5D4F',
+                      fontVariantNumeric: 'tabular-nums',
+                      whiteSpace: 'nowrap',
+                    }}>
                       {order.id}
                     </td>
 
                     {/* Pelanggan */}
-                    <td style={{ padding: '13px 18px', fontWeight: '600', color: '#1E293B', whiteSpace: 'nowrap' }}>
+                    <td style={{
+                      padding: '12px 18px',
+                      fontWeight: '600',
+                      color: '#241B14',
+                      whiteSpace: 'nowrap',
+                    }}>
                       {order.customer}
                     </td>
 
                     {/* Sumber */}
-                    <td style={{ padding: '13px 18px', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}>
                       <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '5px',
-                        padding: '3px 8px', borderRadius: '6px',
-                        background: '#F1F5F9', color: '#475569', fontSize: '12px', fontWeight: '600',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        fontSize: '12px',
+                        color: '#6E5D4F',
                       }}>
-                        <SourceIcon size={12} color="#6366F1" />
+                        <SourceIcon size={13} color="#8C7A6B" />
                         {order.source}
                       </span>
                     </td>
 
                     {/* Item */}
-                    <td style={{ padding: '13px 18px', color: '#64748B', maxWidth: '240px' }}>
-                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{
+                      padding: '12px 18px',
+                      color: '#6E5D4F',
+                      maxWidth: '260px',
+                    }}>
+                      <div style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
                         {order.items}
                       </div>
                     </td>
 
-                    {/* Total */}
-                    <td style={{ padding: '13px 18px', textAlign: 'right', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap' }}>
+                    {/* Total (Right-aligned, tabular nums) */}
+                    <td style={{
+                      padding: '12px 18px',
+                      textAlign: 'right',
+                      fontWeight: '600',
+                      color: '#241B14',
+                      fontVariantNumeric: 'tabular-nums',
+                      whiteSpace: 'nowrap',
+                    }}>
                       {formatRupiah(order.total)}
                     </td>
 
-                    {/* Status */}
-                    <td style={{ padding: '13px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    {/* Status Badge */}
+                    <td style={{ padding: '12px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <span style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '4px',
-                        padding: '3px 10px', borderRadius: '20px',
-                        background: badge.bg, color: badge.text,
-                        fontSize: '11.5px', fontWeight: '700',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: badge.bg,
+                        color: badge.text,
+                        fontSize: '11.5px',
+                        fontWeight: '600',
                       }}>
-                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: badge.dot }} />
+                        <span style={{
+                          width: '5px',
+                          height: '5px',
+                          borderRadius: '50%',
+                          background: badge.dot,
+                        }} />
                         {badge.label}
                       </span>
                     </td>
 
                     {/* Waktu */}
-                    <td style={{ padding: '13px 18px', textAlign: 'right', color: '#94A3B8', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                    <td style={{
+                      padding: '12px 18px',
+                      color: '#9C8B7E',
+                      fontSize: '12px',
+                      whiteSpace: 'nowrap',
+                    }}>
                       {order.time}
+                    </td>
+
+                    {/* Quick Action Button */}
+                    <td style={{ padding: '12px 18px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {isPending ? (
+                        <button
+                          onClick={() => handleConfirmOrder(order.id)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 9px',
+                            borderRadius: '4px',
+                            border: '1px solid #CA8A04',
+                            background: '#FEF9C3',
+                            color: '#854D0E',
+                            fontSize: '11.5px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#FEF08A'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#FEF9C3'; }}
+                          title="Konfirmasi pesanan ini agar masuk ke antrean dapur"
+                        >
+                          <Check size={12} />
+                          Konfirmasi
+                        </button>
+                      ) : (
+                        <span style={{ color: '#C4B5A5', fontSize: '11px' }}>—</span>
+                      )}
                     </td>
                   </tr>
                 );

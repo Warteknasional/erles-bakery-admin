@@ -1,10 +1,8 @@
 import { useState, useMemo } from 'react';
 import {
-  Package, ChevronDown, Search, Filter,
-  Plus, X, Eye, ShoppingCart,
-  TrendingUp, Clock, AlertCircle,
-  Phone, Calendar, User, FileText,
-  RotateCcw,
+  Package, ChevronDown, Search, Plus, X, Eye, ShoppingCart,
+  Clock, AlertCircle, Phone, Calendar, User, FileText,
+  RotateCcw, CheckCircle2, XCircle
 } from 'lucide-react';
 
 // ─── Dummy Data ────────────────────────────────────────────────────────────────
@@ -85,15 +83,13 @@ const dummyOrders = [
 ];
 
 const statusConfig = {
-  pending: { bg: '#FEF3C7', text: '#92400E', dot: '#F59E0B', label: 'Pending' },
-  diproses: { bg: '#DBEAFE', text: '#1E40AF', dot: '#3B82F6', label: 'Diproses' },
-  selesai: { bg: '#D1FAE5', text: '#065F46', dot: '#10B981', label: 'Selesai' },
-  dibatalkan: { bg: '#FEE2E2', text: '#991B1B', dot: '#EF4444', label: 'Dibatalkan' },
+  pending: { bg: '#FEF9C3', text: '#854D0E', dot: '#CA8A04', label: 'Menunggu' },
+  diproses: { bg: '#FFF7ED', text: '#9A3412', dot: '#EA580C', label: 'Diproses' },
+  selesai: { bg: '#F0FDF4', text: '#166534', dot: '#16A34A', label: 'Selesai' },
+  dibatalkan: { bg: '#FEF2F2', text: '#991B1B', dot: '#DC2626', label: 'Dibatalkan' },
 };
 
 const allStatuses = ['pending', 'diproses', 'selesai', 'dibatalkan'];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatRupiah(num) {
   return new Intl.NumberFormat('id-ID', {
@@ -101,264 +97,166 @@ function formatRupiah(num) {
   }).format(num);
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function SummaryCard({ icon: Icon, label, value, accent, bg }) {
-  return (
-    <div style={{
-      background: 'white', borderRadius: '12px',
-      padding: '18px 20px', border: '1px solid #E2E8F0',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      borderLeft: `4px solid ${accent}`,
-      display: 'flex', alignItems: 'center', gap: '14px',
-      transition: 'transform 0.15s, box-shadow 0.15s',
-    }}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 6px 16px rgba(99,102,241,0.10)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-      }}
-    >
-      <div style={{ background: bg, borderRadius: '10px', padding: '10px', display: 'flex', flexShrink: 0 }}>
-        <Icon size={20} color={accent} />
-      </div>
-      <div>
-        <div style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '500', marginBottom: '3px' }}>{label}</div>
-        <div style={{ fontSize: '20px', fontWeight: '800', color: '#1E1B4B' }}>{value}</div>
-      </div>
-    </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const cfg = statusConfig[status];
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: '5px',
-      padding: '4px 11px', borderRadius: '20px',
-      background: cfg.bg, color: cfg.text,
-      fontSize: '12px', fontWeight: '700',
-    }}>
-      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
-      {cfg.label}
-    </span>
-  );
-}
-
-// ─── Modal Detail ─────────────────────────────────────────────────────────────
+// ─── Modal Detail Pesanan ─────────────────────────────────────────────────────
 
 function OrderDetailModal({ order, onClose, onStatusChange }) {
   if (!order) return null;
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0, zIndex: 999,
-          background: 'rgba(15, 23, 42, 0.45)',
-          backdropFilter: 'blur(3px)',
-          animation: 'fadeIn 0.15s ease',
-        }}
-      />
-      <style>{`
-        @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp  { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-
-      {/* Modal */}
+      <div onClick={onClose} style={{
+        position: 'fixed', inset: 0, zIndex: 1099,
+        background: 'rgba(36, 27, 20, 0.45)', backdropFilter: 'blur(2px)',
+      }} />
       <div style={{
-        position: 'fixed', zIndex: 1000,
+        position: 'fixed', zIndex: 1100,
         top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: 'min(560px, calc(100vw - 48px))',
-        maxHeight: 'calc(100vh - 80px)',
+        width: 'min(480px, calc(100vw - 32px))',
+        maxHeight: '90vh',
         background: '#FFFFFF',
-        borderRadius: '16px',
-        boxShadow: '0 20px 60px rgba(30, 27, 75, 0.20)',
-        overflow: 'hidden',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        boxShadow: '0 16px 40px rgba(36, 27, 20, 0.14)',
         display: 'flex', flexDirection: 'column',
-        animation: 'slideUp 0.2s ease',
+        overflow: 'hidden',
       }}>
-
-        {/* Modal Header */}
+        {/* Header */}
         <div style={{
-          padding: '20px 24px',
-          borderBottom: '1px solid #F1F5F9',
+          padding: '18px 24px',
+          borderBottom: '1px solid #EFEAE3',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'linear-gradient(135deg, #1E1B4B, #312E81)',
         }}>
           <div>
-            <div style={{ fontSize: '11px', color: '#A5B4FC', fontWeight: '500', marginBottom: '3px' }}>
-              Detail Pesanan
+            <div style={{ fontSize: '11px', color: '#8C7A6B', fontWeight: '600', letterSpacing: '0.04em' }}>
+              RINCIAN PESANAN
             </div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#FFFFFF' }}>
+            <div style={{ fontSize: '17px', fontWeight: '700', color: '#241B14' }}>
               {order.kode}
             </div>
           </div>
           <button onClick={onClose} style={{
-            background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: '8px',
-            width: '34px', height: '34px', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', cursor: 'pointer', color: 'white',
-            transition: 'background 0.15s',
-          }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.22)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
-          >
-            <X size={16} />
+            background: 'none', border: 'none', color: '#8C7A6B',
+            cursor: 'pointer', padding: '4px', borderRadius: '4px',
+          }}>
+            <X size={18} />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
-
-          {/* Info rows */}
-          {[
-            { icon: User, label: 'Pelanggan', value: order.customer },
-            { icon: Phone, label: 'Telepon', value: order.phone },
-            { icon: Calendar, label: 'Tanggal', value: order.date },
-          ].map(row => (
-            <div key={row.label} style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              marginBottom: '14px',
-            }}>
-              <div style={{
-                width: '34px', height: '34px', borderRadius: '9px',
-                background: '#EEF2FF', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', flexShrink: 0,
-              }}>
-                <row.icon size={16} color="#6366F1" />
-              </div>
-              <div>
-                <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '500' }}>{row.label}</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1E293B' }}>{row.value}</div>
-              </div>
-            </div>
-          ))}
-
-          {/* Status selector */}
+        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Customer Metadata Grid */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            marginBottom: '20px',
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px',
+            background: '#FAF7F2', padding: '12px 14px', borderRadius: '8px', border: '1px solid #EAE4DC',
           }}>
-            <div style={{
-              width: '34px', height: '34px', borderRadius: '9px',
-              background: '#EEF2FF', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', flexShrink: 0,
-            }}>
-              <AlertCircle size={16} color="#6366F1" />
+            <div>
+              <div style={{ fontSize: '11px', color: '#8C7A6B' }}>Nama Pelanggan</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#241B14', marginTop: '2px' }}>{order.customer}</div>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '500', marginBottom: '5px' }}>Status</div>
-              <div style={{ position: 'relative', display: 'inline-block' }}>
-                <select
-                  value={order.status}
-                  onChange={e => onStatusChange(order.id, e.target.value)}
-                  style={{
-                    padding: '6px 30px 6px 12px',
-                    borderRadius: '20px', border: 'none',
-                    fontSize: '13px', fontWeight: '700',
-                    cursor: 'pointer', appearance: 'none',
-                    backgroundColor: statusConfig[order.status].bg,
-                    color: statusConfig[order.status].text,
-                    outline: 'none',
-                  }}
-                >
-                  {allStatuses.map(s => (
-                    <option key={s} value={s}>{statusConfig[s].label}</option>
-                  ))}
-                </select>
-                <ChevronDown size={13} style={{
-                  position: 'absolute', right: '9px', top: '50%',
-                  transform: 'translateY(-50%)', pointerEvents: 'none',
-                  color: statusConfig[order.status].text,
-                }} />
-              </div>
+            <div>
+              <div style={{ fontSize: '11px', color: '#8C7A6B' }}>Kontak WhatsApp</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#241B14', marginTop: '2px' }}>{order.phone}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: '#8C7A6B' }}>Tanggal Pesanan</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#241B14', marginTop: '2px' }}>{order.date}</div>
             </div>
           </div>
 
-          {/* Items list */}
-          <div style={{
-            background: '#F8FAFC', borderRadius: '12px',
-            border: '1px solid #E2E8F0', overflow: 'hidden',
-            marginBottom: '16px',
-          }}>
-            <div style={{
-              padding: '12px 16px', borderBottom: '1px solid #E2E8F0',
-              display: 'flex', alignItems: 'center', gap: '7px',
-            }}>
-              <Package size={15} color="#6366F1" />
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#1E293B' }}>
-                Item Pesanan
-              </span>
+          {/* Quick Status Control */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#5C4A3C' }}>Status Pesanan Saat Ini:</span>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <select
+                value={order.status}
+                onChange={e => onStatusChange(order.id, e.target.value)}
+                style={{
+                  padding: '5px 26px 5px 10px',
+                  borderRadius: '4px', border: '1px solid #D4C5B9',
+                  fontSize: '12px', fontWeight: '600',
+                  cursor: 'pointer', appearance: 'none',
+                  backgroundColor: statusConfig[order.status].bg,
+                  color: statusConfig[order.status].text,
+                  outline: 'none',
+                }}
+              >
+                {allStatuses.map(s => (
+                  <option key={s} value={s}>{statusConfig[s].label}</option>
+                ))}
+              </select>
+              <ChevronDown size={12} style={{
+                position: 'absolute', right: '8px', top: '50%',
+                transform: 'translateY(-50%)', pointerEvents: 'none',
+                color: statusConfig[order.status].text,
+              }} />
             </div>
-            {order.items.map((item, idx) => (
-              <div key={idx} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '11px 16px',
-                borderBottom: idx < order.items.length - 1 ? '1px solid #F1F5F9' : 'none',
-              }}>
-                <div>
-                  <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#1E293B' }}>{item.nama}</div>
-                  <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '1px' }}>
-                    {item.qty} × {formatRupiah(item.harga)}
+          </div>
+
+          {/* Items breakdown list */}
+          <div>
+            <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#241B14', marginBottom: '8px' }}>
+              Daftar Item Roti & Kue:
+            </div>
+            <div style={{
+              borderRadius: '8px', border: '1px solid #E6DED4', overflow: 'hidden',
+            }}>
+              {order.items.map((item, idx) => (
+                <div key={idx} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 14px',
+                  borderBottom: idx < order.items.length - 1 ? '1px solid #F3EDE6' : 'none',
+                  background: '#FFFFFF',
+                }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#241B14' }}>{item.nama}</div>
+                    <div style={{ fontSize: '11.5px', color: '#8C7A6B' }}>
+                      {item.qty} × {formatRupiah(item.harga)}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#241B14', fontVariantNumeric: 'tabular-nums' }}>
+                    {formatRupiah(item.qty * item.harga)}
                   </div>
                 </div>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#6366F1' }}>
-                  {formatRupiah(item.qty * item.harga)}
-                </div>
+              ))}
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '12px 14px',
+                background: '#FAF7F2',
+                borderTop: '1px solid #E6DED4',
+              }}>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#5C4A3C' }}>Total Pembayaran</span>
+                <span style={{ fontSize: '15px', fontWeight: '700', color: '#241B14', fontVariantNumeric: 'tabular-nums' }}>
+                  {formatRupiah(order.total)}
+                </span>
               </div>
-            ))}
-            {/* Total row */}
-            <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '12px 16px',
-              background: '#EEF2FF', borderTop: '1px solid #C7D2FE',
-            }}>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: '#4338CA' }}>Total</span>
-              <span style={{ fontSize: '16px', fontWeight: '800', color: '#4338CA' }}>
-                {formatRupiah(order.total)}
-              </span>
             </div>
           </div>
 
-          {/* Catatan */}
+          {/* Catatan Pelanggan */}
           {order.catatan && (
             <div style={{
-              background: '#FFFBEB', border: '1px solid #FDE68A',
-              borderRadius: '10px', padding: '12px 14px',
-              display: 'flex', gap: '9px', alignItems: 'flex-start',
+              background: '#FEF9C3', border: '1px solid #FDE047',
+              borderRadius: '8px', padding: '10px 12px',
             }}>
-              <FileText size={15} color="#D97706" style={{ flexShrink: 0, marginTop: '1px' }} />
-              <div>
-                <div style={{ fontSize: '11px', color: '#92400E', fontWeight: '600', marginBottom: '2px' }}>Catatan</div>
-                <div style={{ fontSize: '13px', color: '#78350F' }}>{order.catatan}</div>
+              <div style={{ fontSize: '11px', color: '#854D0E', fontWeight: '600', marginBottom: '2px' }}>
+                Catatan Khusus Pelanggan:
               </div>
+              <div style={{ fontSize: '12.5px', color: '#713F12' }}>{order.catatan}</div>
             </div>
           )}
         </div>
 
         {/* Modal Footer */}
         <div style={{
-          padding: '16px 24px', borderTop: '1px solid #F1F5F9',
+          padding: '14px 24px', borderTop: '1px solid #EFEAE3',
           display: 'flex', justifyContent: 'flex-end',
         }}>
           <button onClick={onClose} style={{
-            padding: '10px 24px', borderRadius: '9px',
-            background: 'linear-gradient(135deg, #6366F1, #312E81)',
-            color: 'white', border: 'none', fontWeight: '700',
-            fontSize: '14px', cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(99,102,241,0.30)',
-            transition: 'transform 0.15s, box-shadow 0.15s',
-            fontFamily: 'inherit',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(99,102,241,0.40)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(99,102,241,0.30)'; }}
-          >
+            padding: '8px 16px', borderRadius: '8px',
+            background: '#241B14', color: '#FFFFFF', border: 'none',
+            fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+          }}>
             Tutup
           </button>
         </div>
@@ -367,7 +265,7 @@ function OrderDetailModal({ order, onClose, onStatusChange }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page Component ──────────────────────────────────────────────────────
 
 export default function PesananPage() {
   const [orders, setOrders] = useState(dummyOrders);
@@ -380,7 +278,6 @@ export default function PesananPage() {
     setOrders(prev =>
       prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o)
     );
-    // Sync with modal if open
     setSelectedOrder(prev => prev?.id === orderId ? { ...prev, status: newStatus } : prev);
   };
 
@@ -401,108 +298,240 @@ export default function PesananPage() {
     return matchSearch && matchStatus && matchDate;
   }), [orders, searchTerm, filterStatus, filterDate]);
 
-  // Summary stats
-  const totalPesanan = orders.length;
-  const totalPending = orders.filter(o => o.status === 'pending').length;
+  // Metrics
+  const totalPesanan  = orders.length;
+  const totalPending  = orders.filter(o => o.status === 'pending').length;
   const totalDiproses = orders.filter(o => o.status === 'diproses').length;
-  const nilaiTotal = orders.reduce((s, o) => s + o.total, 0);
+  const totalSelesai  = orders.filter(o => o.status === 'selesai').length;
+  const nilaiTotal    = orders.reduce((s, o) => s + o.total, 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{
+      maxWidth: '1280px',
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '24px',
+      color: '#241B14',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    }}>
 
-      {/* ── [A] Header ──────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* ── [1] HEADER ──────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '16px',
+        paddingBottom: '4px',
+      }}>
+        <div>
           <div style={{
-            width: '44px', height: '44px', borderRadius: '12px',
-            background: 'linear-gradient(135deg, #6366F1, #312E81)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(99,102,241,0.30)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px',
+            color: '#8C7A6B',
+            fontWeight: '600',
+            letterSpacing: '0.02em',
+            marginBottom: '4px',
           }}>
-            <Package size={22} color="white" />
+            <span>ERLES BAKERY</span>
+            <span style={{ color: '#D4C5B9' }}>/</span>
+            <span>MANAJEMEN PESANAN</span>
           </div>
-          <div>
-            <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#1E1B4B', margin: 0, letterSpacing: '-0.3px' }}>
-              Kelola Pesanan
-            </h1>
-            <p style={{ fontSize: '13px', color: '#94A3B8', margin: 0 }}>
-              {totalPesanan} pesanan terdaftar
-            </p>
+
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '700',
+            color: '#241B14',
+            margin: '0 0 6px 0',
+            letterSpacing: '-0.02em',
+          }}>
+            Daftar Pesanan Pelanggan
+          </h1>
+
+          <div style={{ fontSize: '13px', color: '#6E5D4F' }}>
+            {totalPending > 0 ? (
+              <span style={{ color: '#B45309', fontWeight: '600' }}>
+                {totalPending} pesanan menunggu konfirmasi dapur
+              </span>
+            ) : (
+              <span style={{ color: '#166534', fontWeight: '500' }}>
+                ✓ Tidak ada pesanan tertunda
+              </span>
+            )}
+            <span style={{ color: '#D4C5B9', margin: '0 8px' }}>•</span>
+            <span>Total omzet terdaftar {formatRupiah(nilaiTotal)}</span>
           </div>
         </div>
 
         <button
-          style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '10px 20px',
-            background: 'linear-gradient(135deg, #6366F1, #312E81)',
-            color: 'white', border: 'none', borderRadius: '10px',
-            fontWeight: '700', fontSize: '14px', cursor: 'pointer',
-            boxShadow: '0 3px 10px rgba(99,102,241,0.30)',
-            transition: 'transform 0.15s, box-shadow 0.15s',
-            fontFamily: 'inherit',
+          onClick={() => {
+            // Bisa membuka drawer atau tambah pesanan baru
+            alert('Formulir pencatatan pesanan baru siap ditambahkan.');
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(99,102,241,0.40)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 3px 10px rgba(99,102,241,0.30)'; }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            borderRadius: '8px',
+            border: 'none',
+            background: '#241B14',
+            color: '#FFFFFF',
+            fontSize: '13px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#3D2D22'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#241B14'; }}
         >
-          <Plus size={17} />
+          <Plus size={15} />
           Tambah Pesanan
         </button>
       </div>
 
-      {/* ── [B] Summary Cards ───────────────────────────────────────── */}
+      {/* ── [2] UNIFIED METRIC STRIP ─────────────────────────────────── */}
       <div style={{
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        gap: '14px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
       }}>
-        <SummaryCard icon={ShoppingCart} label="Total Pesanan" value={totalPesanan} accent="#6366F1" bg="#E0E7FF" />
-        <SummaryCard icon={Clock} label="Pending" value={totalPending} accent="#F59E0B" bg="#FEF3C7" />
-        <SummaryCard icon={AlertCircle} label="Diproses" value={totalDiproses} accent="#3B82F6" bg="#DBEAFE" />
-        <SummaryCard icon={TrendingUp} label="Nilai Total" value={formatRupiah(nilaiTotal)} accent="#10B981" bg="#D1FAE5" />
+        {/* Metric 1: Total Pesanan */}
+        <div style={{ padding: '20px 24px', borderRight: '1px solid #EFEAE3' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Total Pesanan
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {totalPesanan} <span style={{ fontSize: '14px', fontWeight: '500', color: '#8C7A6B' }}>nota</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Seluruh transaksi yang terdaftar
+          </div>
+        </div>
+
+        {/* Metric 2: Menunggu Konfirmasi */}
+        <div style={{ padding: '20px 24px', borderRight: '1px solid #EFEAE3' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Menunggu Dapur
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: totalPending > 0 ? '#B45309' : '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {totalPending} <span style={{ fontSize: '14px', fontWeight: '500', color: '#8C7A6B' }}>antrean</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Butuh verifikasi jadwal oven
+          </div>
+        </div>
+
+        {/* Metric 3: Sedang Diproses */}
+        <div style={{ padding: '20px 24px', borderRight: '1px solid #EFEAE3' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Sedang Dikerjakan
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {totalDiproses} <span style={{ fontSize: '14px', fontWeight: '500', color: '#8C7A6B' }}>pesanan</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            Dalam tahap baking & packing
+          </div>
+        </div>
+
+        {/* Metric 4: Nilai Total Omzet */}
+        <div style={{ padding: '20px 24px' }}>
+          <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#7D6B5C', marginBottom: '8px' }}>
+            Akumulasi Nilai Pesanan
+          </div>
+          <div style={{
+            fontSize: '26px',
+            fontWeight: '700',
+            color: '#241B14',
+            letterSpacing: '-0.02em',
+            fontVariantNumeric: 'tabular-nums',
+            marginBottom: '6px',
+          }}>
+            {formatRupiah(nilaiTotal)}
+          </div>
+          <div style={{ fontSize: '12px', color: '#8C7A6B' }}>
+            {totalSelesai} pesanan telah selesai dikirim
+          </div>
+        </div>
       </div>
 
-      {/* ── [C] Filter Bar ──────────────────────────────────────────── */}
+      {/* ── [3] FILTER CONTROLS ──────────────────────────────────────── */}
       <div style={{
-        background: 'white', borderRadius: '12px',
-        border: '1px solid #E2E8F0',
-        padding: '16px 20px',
-        display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        padding: '14px 18px',
+        display: 'flex',
+        gap: '12px',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.02)',
       }}>
         {/* Search */}
-        <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+        <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
+          <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#9C8B7E' }} />
           <input
             type="text"
-            placeholder="Cari kode atau nama pelanggan..."
+            placeholder="Cari kode pesanan atau nama pelanggan..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             style={{
-              width: '100%', padding: '9px 12px 9px 38px',
-              border: '1.5px solid #E2E8F0', borderRadius: '9px',
-              fontSize: '13.5px', outline: 'none', boxSizing: 'border-box',
-              transition: 'border-color 0.15s',
-              fontFamily: 'inherit',
+              width: '100%',
+              padding: '8px 12px 8px 34px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '13px',
+              color: '#241B14',
+              outline: 'none',
+              boxSizing: 'border-box',
+              background: '#FAF7F2',
             }}
-            onFocus={e => e.target.style.borderColor = '#6366F1'}
-            onBlur={e => e.target.style.borderColor = '#E2E8F0'}
           />
         </div>
 
-        {/* Filter Status */}
-        <div style={{ position: 'relative', minWidth: '150px' }}>
-          <Filter size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+        {/* Status Filter */}
+        <div style={{ minWidth: '150px' }}>
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
             style={{
-              width: '100%', padding: '9px 12px 9px 34px',
-              border: '1.5px solid #E2E8F0', borderRadius: '9px',
-              fontSize: '13.5px', outline: 'none', appearance: 'none',
-              background: 'white', cursor: 'pointer',
-              fontFamily: 'inherit',
-              color: filterStatus ? '#1E293B' : '#94A3B8',
+              width: '100%',
+              padding: '8px 10px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '12.5px',
+              color: '#4A3B30',
+              background: '#FAF7F2',
+              cursor: 'pointer',
+              outline: 'none',
             }}
           >
             <option value="">Semua Status</option>
@@ -510,219 +539,232 @@ export default function PesananPage() {
               <option key={s} value={s}>{statusConfig[s].label}</option>
             ))}
           </select>
-          <ChevronDown size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94A3B8' }} />
         </div>
 
-        {/* Filter Tanggal */}
-        <div style={{ position: 'relative', minWidth: '155px' }}>
-          <Calendar size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', zIndex: 1 }} />
+        {/* Date Filter */}
+        <div>
           <input
             type="date"
             value={filterDate}
             onChange={e => setFilterDate(e.target.value)}
             style={{
-              width: '100%', padding: '9px 12px 9px 34px',
-              border: '1.5px solid #E2E8F0', borderRadius: '9px',
-              fontSize: '13.5px', outline: 'none', boxSizing: 'border-box',
-              background: 'white', cursor: 'pointer',
-              fontFamily: 'inherit',
-              color: filterDate ? '#1E293B' : '#94A3B8',
+              padding: '7px 9px',
+              border: '1px solid #E6DED4',
+              borderRadius: '7px',
+              fontSize: '12px',
+              color: '#4A3B30',
+              background: '#FAF7F2',
             }}
           />
         </div>
 
-        {/* Reset */}
+        {/* Reset Filter */}
         {hasActiveFilter && (
           <button
             onClick={resetFilters}
             style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '9px 14px', borderRadius: '9px',
-              border: '1.5px solid #EEF2FF',
-              background: '#EEF2FF', color: '#6366F1',
-              fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'background 0.15s',
-              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '7px 11px',
+              borderRadius: '7px',
+              border: '1px solid #E6DED4',
+              background: '#FFFFFF',
+              color: '#7D6B5C',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#E0E7FF'}
-            onMouseLeave={e => e.currentTarget.style.background = '#EEF2FF'}
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={12} />
             Reset
           </button>
         )}
 
-        {/* Result count */}
-        <div style={{ marginLeft: 'auto', fontSize: '13px', color: '#94A3B8', whiteSpace: 'nowrap' }}>
+        {/* Counter */}
+        <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#8C7A6B' }}>
           {filteredOrders.length} dari {orders.length} pesanan
         </div>
       </div>
 
-      {/* ── [D] Tabel ───────────────────────────────────────────────── */}
+      {/* ── [4] TABEL PESANAN (Clean, Sentence-case & Tabular Nums) ────── */}
       <div style={{
-        background: 'white', borderRadius: '14px',
-        border: '1px solid #E2E8F0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        border: '1px solid #E6DED4',
+        boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
         overflow: 'hidden',
       }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: '13px',
+            textAlign: 'left',
+          }}>
             <thead>
-              <tr style={{ background: '#F8FAFC' }}>
-                {['Kode Pesanan', 'Pelanggan', 'Item', 'Total', 'Status', 'Tanggal', 'Aksi'].map(h => (
-                  <th key={h} style={{
-                    padding: '13px 16px', textAlign: 'left',
-                    fontWeight: '700', color: '#64748B', fontSize: '12px',
-                    borderBottom: '1px solid #E2E8F0',
-                    whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.4px',
-                  }}>{h}</th>
-                ))}
+              <tr style={{
+                background: '#FAF7F2',
+                borderBottom: '1px solid #E6DED4',
+                color: '#6E5D4F',
+                fontSize: '12px',
+                fontWeight: '600',
+              }}>
+                <th style={{ padding: '11px 18px' }}>Kode Pesanan</th>
+                <th style={{ padding: '11px 18px' }}>Pelanggan</th>
+                <th style={{ padding: '11px 18px' }}>Rincian Item</th>
+                <th style={{ padding: '11px 18px', textAlign: 'right' }}>Total Bayar</th>
+                <th style={{ padding: '11px 18px', textAlign: 'center' }}>Status Pesanan</th>
+                <th style={{ padding: '11px 18px' }}>Tanggal</th>
+                <th style={{ padding: '11px 18px', textAlign: 'right' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ padding: '56px 24px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                      <div style={{
-                        width: '56px', height: '56px', borderRadius: '14px',
-                        background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <Search size={24} color="#CBD5E1" />
+                  <td colSpan={7} style={{ padding: '48px 24px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <Package size={28} color="#D4C5B9" />
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#7D6B5C' }}>
+                        Tidak ada pesanan yang sesuai
                       </div>
-                      <div style={{ fontSize: '15px', fontWeight: '700', color: '#94A3B8' }}>Tidak ada pesanan ditemukan</div>
-                      <div style={{ fontSize: '13px', color: '#CBD5E1' }}>Coba ubah filter atau kata kunci pencarian.</div>
+                      <div style={{ fontSize: '12px', color: '#9C8B7E' }}>
+                        Sesuaikan kata kunci pencarian atau reset filter status.
+                      </div>
                     </div>
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map(order => (
-                  <tr key={order.id}
-                    style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.12s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#FAFAFF'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                  >
-                    {/* Kode */}
-                    <td style={{ padding: '14px 16px', fontWeight: '700', color: '#6366F1', whiteSpace: 'nowrap' }}>
-                      {order.kode}
-                    </td>
+                filteredOrders.map(order => {
+                  const badge = statusConfig[order.status];
 
-                    {/* Pelanggan */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontWeight: '600', color: '#1E293B', fontSize: '13.5px' }}>{order.customer}</div>
-                      <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '1px' }}>{order.phone}</div>
-                    </td>
+                  return (
+                    <tr
+                      key={order.id}
+                      style={{
+                        borderBottom: '1px solid #F3EDE6',
+                        transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#FAF7F2'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
+                    >
+                      {/* Kode Pesanan */}
+                      <td style={{
+                        padding: '12px 18px',
+                        fontWeight: '600',
+                        color: '#6E5D4F',
+                        fontVariantNumeric: 'tabular-nums',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {order.kode}
+                      </td>
 
-                    {/* Item preview */}
-                    <td style={{ padding: '14px 16px', minWidth: '160px' }}>
-                      <div style={{ fontSize: '13px', color: '#1E293B', fontWeight: '500' }}>
-                        {order.items[0].nama}
-                      </div>
-                      {order.items.length > 1 && (
-                        <div style={{
-                          display: 'inline-block', marginTop: '3px',
-                          fontSize: '11px', color: '#6366F1', fontWeight: '700',
-                          background: '#EEF2FF', borderRadius: '20px', padding: '1px 8px',
-                        }}>
-                          +{order.items.length - 1} item lainnya
+                      {/* Pelanggan */}
+                      <td style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: '600', color: '#241B14' }}>{order.customer}</div>
+                        <div style={{ fontSize: '11.5px', color: '#9C8B7E', marginTop: '2px' }}>{order.phone}</div>
+                      </td>
+
+                      {/* Rincian Item */}
+                      <td style={{ padding: '12px 18px', minWidth: '180px', color: '#6E5D4F' }}>
+                        <div style={{ fontWeight: '500', color: '#241B14' }}>
+                          {order.items[0].nama}
                         </div>
-                      )}
-                    </td>
+                        {order.items.length > 1 && (
+                          <div style={{ fontSize: '11.5px', color: '#8C7A6B', marginTop: '2px' }}>
+                            +{order.items.length - 1} item lainnya
+                          </div>
+                        )}
+                      </td>
 
-                    {/* Total */}
-                    <td style={{ padding: '14px 16px', fontWeight: '700', color: '#1E1B4B', whiteSpace: 'nowrap' }}>
-                      {formatRupiah(order.total)}
-                    </td>
+                      {/* Total */}
+                      <td style={{
+                        padding: '12px 18px',
+                        textAlign: 'right',
+                        fontWeight: '700',
+                        color: '#241B14',
+                        fontVariantNumeric: 'tabular-nums',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {formatRupiah(order.total)}
+                      </td>
 
-                    {/* Status (editable) */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <select
-                          value={order.status}
-                          onChange={e => handleStatusChange(order.id, e.target.value)}
+                      {/* Status Dropdown/Badge */}
+                      <td style={{ padding: '12px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                          <select
+                            value={order.status}
+                            onChange={e => handleStatusChange(order.id, e.target.value)}
+                            style={{
+                              padding: '3px 22px 3px 8px',
+                              borderRadius: '4px',
+                              border: '1px solid transparent',
+                              fontSize: '11.5px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              appearance: 'none',
+                              backgroundColor: badge.bg,
+                              color: badge.text,
+                              outline: 'none',
+                            }}
+                          >
+                            {allStatuses.map(s => (
+                              <option key={s} value={s}>{statusConfig[s].label}</option>
+                            ))}
+                          </select>
+                          <ChevronDown size={11} style={{
+                            position: 'absolute', right: '6px', top: '50%',
+                            transform: 'translateY(-50%)', pointerEvents: 'none',
+                            color: badge.text,
+                          }} />
+                        </div>
+                      </td>
+
+                      {/* Tanggal */}
+                      <td style={{ padding: '12px 18px', color: '#8C7A6B', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                        {order.date}
+                      </td>
+
+                      {/* Aksi Detail */}
+                      <td style={{ padding: '12px 18px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button
+                          onClick={() => setSelectedOrder(order)}
                           style={{
-                            padding: '5px 26px 5px 10px',
-                            borderRadius: '20px', border: 'none',
-                            fontSize: '12px', fontWeight: '700',
-                            cursor: 'pointer', appearance: 'none',
-                            backgroundColor: statusConfig[order.status].bg,
-                            color: statusConfig[order.status].text,
-                            outline: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 9px',
+                            borderRadius: '4px',
+                            border: '1px solid #E6DED4',
+                            background: '#FFFFFF',
+                            color: '#5C4A3C',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'background 0.12s',
                           }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#FAF7F2'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; }}
                         >
-                          {allStatuses.map(s => (
-                            <option key={s} value={s}>{statusConfig[s].label}</option>
-                          ))}
-                        </select>
-                        <ChevronDown size={12} style={{
-                          position: 'absolute', right: '7px', top: '50%',
-                          transform: 'translateY(-50%)', pointerEvents: 'none',
-                          color: statusConfig[order.status].text,
-                        }} />
-                      </div>
-                    </td>
-
-                    {/* Tanggal */}
-                    <td style={{ padding: '14px 16px', color: '#64748B', whiteSpace: 'nowrap', fontSize: '13px' }}>
-                      {order.date}
-                    </td>
-
-                    {/* Aksi */}
-                    <td style={{ padding: '14px 16px' }}>
-                      <button
-                        onClick={() => setSelectedOrder(order)}
-                        title="Lihat detail"
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '5px',
-                          padding: '6px 13px', borderRadius: '8px',
-                          border: '1.5px solid #E0E7FF',
-                          background: '#EEF2FF', color: '#6366F1',
-                          fontSize: '12px', fontWeight: '700',
-                          cursor: 'pointer', fontFamily: 'inherit',
-                          transition: 'background 0.12s, border-color 0.12s',
-                          whiteSpace: 'nowrap',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#E0E7FF'; e.currentTarget.style.borderColor = '#A5B4FC'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#EEF2FF'; e.currentTarget.style.borderColor = '#E0E7FF'; }}
-                      >
-                        <Eye size={13} />
-                        Detail
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                          <Eye size={12} />
+                          Rincian
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
-
-        {/* Table Footer */}
-        {filteredOrders.length > 0 && (
-          <div style={{
-            padding: '12px 20px',
-            borderTop: '1px solid #F1F5F9',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#FAFAFA',
-          }}>
-            <span style={{ fontSize: '12.5px', color: '#94A3B8' }}>
-              Menampilkan {filteredOrders.length} dari {orders.length} pesanan
-            </span>
-            <span style={{ fontSize: '12.5px', color: '#6366F1', fontWeight: '700' }}>
-              Subtotal: {formatRupiah(filteredOrders.reduce((s, o) => s + o.total, 0))}
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* ── [E] Modal Detail ─────────────────────────────────────────── */}
-      {selectedOrder && (
-        <OrderDetailModal
-          order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-          onStatusChange={handleStatusChange}
-        />
-      )}
+      {/* ── [5] MODAL DETAIL PESANAN ─────────────────────────────────── */}
+      <OrderDetailModal
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onStatusChange={handleStatusChange}
+      />
     </div>
   );
 }
