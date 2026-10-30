@@ -6,6 +6,7 @@ import {
   Store, Smartphone, Globe, ArrowRight, RefreshCw,
   Plus, Check, ChevronRight, Flame
 } from 'lucide-react';
+import Pagination from '../components/common/Pagination';
 
 // ─── Data Toko & Metrik ────────────────────────────────────────────────────────
 
@@ -170,6 +171,8 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState(initialOrders);
   const [refreshing, setRefreshing] = useState(false);
   const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const todayStr = useMemo(() => getTodayFormatted(), []);
 
@@ -179,6 +182,11 @@ export default function DashboardPage() {
       prev.map(o => o.id === orderId ? { ...o, status: 'diproses' } : o)
     );
   };
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return orders.slice(start, start + ITEMS_PER_PAGE);
+  }, [orders, currentPage]);
 
   const pendingCount = orders.filter(o => o.status === 'menunggu_konfirmasi').length;
   const processingCount = orders.filter(o => o.status === 'diproses').length;
@@ -884,7 +892,7 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {orders.map(order => {
+              {paginatedOrders.map(order => {
                 const badge = getStatusStyle(order.status);
                 const SourceIcon = order.sourceIcon;
                 const isPending = order.status === 'menunggu_konfirmasi';
@@ -1030,6 +1038,14 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination 10 items/page */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={orders.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
     </div>

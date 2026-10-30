@@ -4,6 +4,7 @@ import {
   CheckCircle2, AlertTriangle, AlertCircle,
   RotateCcw, X, Edit2, Trash2, Tag, ChevronDown
 } from 'lucide-react';
+import Pagination from '../components/common/Pagination';
 
 // ─── Dummy Data Stok Bahan Baku Erles Bakery ──────────────────────────────────
 
@@ -96,6 +97,46 @@ const initialIngredients = [
     stok: 10,
     satuan: 'pack',
     minimumStok: 4,
+    status: 'Aman',
+  },
+  {
+    id: 10,
+    kode: 'BHN-010',
+    nama: 'Garam Laut Halus Murni (Sea Salt)',
+    kategori: 'Pemanis',
+    stok: 20,
+    satuan: 'kg',
+    minimumStok: 5,
+    status: 'Aman',
+  },
+  {
+    id: 11,
+    kode: 'BHN-011',
+    nama: 'Choco Chips Semi-Sweet Callebaut',
+    kategori: 'Coklat & Topping',
+    stok: 14,
+    satuan: 'kg',
+    minimumStok: 6,
+    status: 'Aman',
+  },
+  {
+    id: 12,
+    kode: 'BHN-012',
+    nama: 'Baking Powder Double Acting',
+    kategori: 'Pengembang',
+    stok: 2,
+    satuan: 'can',
+    minimumStok: 4,
+    status: 'Kritis',
+  },
+  {
+    id: 13,
+    kode: 'BHN-013',
+    nama: 'Almond Slice Panggang',
+    kategori: 'Coklat & Topping',
+    stok: 7,
+    satuan: 'kg',
+    minimumStok: 5,
     status: 'Aman',
   },
 ];
@@ -413,6 +454,8 @@ export default function StokBahanPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('Semua Status');
   const [selectedCategory, setSelectedCategory] = useState('Semua Kategori');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const [modalState, setModalState] = useState({ isOpen: false, item: null });
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -447,12 +490,18 @@ export default function StokBahanPage() {
     });
   }, [ingredients, searchTerm, selectedStatus, selectedCategory]);
 
+  const paginatedIngredients = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredIngredients.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredIngredients, currentPage]);
+
   const hasFilter = searchTerm || selectedStatus !== 'Semua Status' || selectedCategory !== 'Semua Kategori';
 
   const resetFilter = () => {
     setSearchTerm('');
     setSelectedStatus('Semua Status');
     setSelectedCategory('Semua Kategori');
+    setCurrentPage(1);
   };
 
   return (
@@ -788,7 +837,7 @@ export default function StokBahanPage() {
                   </td>
                 </tr>
               ) : (
-                filteredIngredients.map(item => {
+                paginatedIngredients.map(item => {
                   const badge = getStatusBadge(item.status);
 
                   return (
@@ -924,6 +973,14 @@ export default function StokBahanPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination 10 items/page */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredIngredients.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
 
         {/* Footer */}
         {filteredIngredients.length > 0 && (

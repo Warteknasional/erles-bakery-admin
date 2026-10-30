@@ -4,6 +4,7 @@ import {
   RotateCcw, X, Edit2, Trash2, Tag, ChevronDown,
   AlertTriangle
 } from 'lucide-react';
+import Pagination from '../components/common/Pagination';
 
 // ─── Dummy Data Master Produk Erles Bakery ────────────────────────────────────
 
@@ -117,6 +118,50 @@ const initialProducts = [
     stok: 0,
     status: 'Tidak Aktif',
     emoji: '🍪',
+  },
+  {
+    id: 11,
+    nama: 'Cinnamon Roll Cream Cheese Glaze',
+    sku: 'PST-CNM-011',
+    kategori: 'Croissant & Pastry',
+    hargaJual: 18000,
+    hpp: 9000,
+    stok: 14,
+    status: 'Tersedia',
+    emoji: '🥮',
+  },
+  {
+    id: 12,
+    nama: 'Almond Croissant Flaky',
+    sku: 'PST-ALM-012',
+    kategori: 'Croissant & Pastry',
+    hargaJual: 26000,
+    hpp: 13500,
+    stok: 9,
+    status: 'Tersedia',
+    emoji: '🥐',
+  },
+  {
+    id: 13,
+    nama: 'Japanese Milk Bread Shokupan',
+    sku: 'ROT-TWR-013',
+    kategori: 'Roti Tawar',
+    hargaJual: 25000,
+    hpp: 13000,
+    stok: 16,
+    status: 'Tersedia',
+    emoji: '🍞',
+  },
+  {
+    id: 14,
+    nama: 'Choux au Craquelin Vanilla',
+    sku: 'CAK-CHX-014',
+    kategori: 'Cake',
+    hargaJual: 15000,
+    hpp: 7500,
+    stok: 20,
+    status: 'Tersedia',
+    emoji: '🧁',
   },
 ];
 
@@ -464,6 +509,8 @@ export default function ProdukPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Semua Kategori');
   const [selectedStatus, setSelectedStatus] = useState('Semua Status');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const [modalState, setModalState] = useState({ isOpen: false, product: null });
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -500,12 +547,18 @@ export default function ProdukPage() {
     });
   }, [products, searchTerm, selectedCategory, selectedStatus]);
 
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
   const hasFilter = searchTerm || selectedCategory !== 'Semua Kategori' || selectedStatus !== 'Semua Status';
 
   const resetFilter = () => {
     setSearchTerm('');
     setSelectedCategory('Semua Kategori');
     setSelectedStatus('Semua Status');
+    setCurrentPage(1);
   };
 
   return (
@@ -845,7 +898,7 @@ export default function ProdukPage() {
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map(prod => {
+                paginatedProducts.map(prod => {
                   const badge = getStatusBadge(prod.status);
                   const marginLaba = prod.hargaJual - prod.hpp;
 
@@ -1013,6 +1066,14 @@ export default function ProdukPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination 10 items/page */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredProducts.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
 
         {/* Footer */}
         {filteredProducts.length > 0 && (

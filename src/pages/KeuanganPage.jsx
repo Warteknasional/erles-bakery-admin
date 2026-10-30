@@ -3,6 +3,7 @@ import {
   Plus, Search, Filter, Calendar, RotateCcw, Trash2, X,
   ChevronDown, Tag, FileText, AlertTriangle, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
+import Pagination from '../components/common/Pagination';
 
 // ─── Dummy Data ────────────────────────────────────────────────────────────────
 
@@ -351,6 +352,8 @@ export default function KeuanganPage() {
   const [transactions, setTransactions] = useState(initialTransactions);
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -367,6 +370,7 @@ export default function KeuanganPage() {
     setFilterKategori('');
     setDateFrom('');
     setDateTo('');
+    setCurrentPage(1);
   };
 
   // Metrics
@@ -385,6 +389,11 @@ export default function KeuanganPage() {
     const matchDateTo   = !dateTo || tx.tanggal <= dateTo;
     return matchSearch && matchTipe && matchKategori && matchDateFrom && matchDateTo;
   }), [transactions, searchTerm, filterTipe, filterKategori, dateFrom, dateTo]);
+
+  const paginatedTx = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredTx.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredTx, currentPage]);
 
   const handleAdd = (newTx) => {
     setTransactions(prev => [newTx, ...prev]);
@@ -760,7 +769,7 @@ export default function KeuanganPage() {
                   </td>
                 </tr>
               ) : (
-                filteredTx.map(tx => {
+                paginatedTx.map(tx => {
                   const isIncome = tx.tipe === 'pemasukan';
 
                   return (
@@ -867,6 +876,14 @@ export default function KeuanganPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination 10 items/page */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredTx.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
 
         {/* Table Ledger Footer / Subtotal */}
         {filteredTx.length > 0 && (

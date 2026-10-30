@@ -4,6 +4,7 @@ import {
   Clock, AlertCircle, Phone, Calendar, User, FileText,
   RotateCcw, CheckCircle2, XCircle
 } from 'lucide-react';
+import Pagination from '../components/common/Pagination';
 
 // ─── Dummy Data ────────────────────────────────────────────────────────────────
 
@@ -273,6 +274,8 @@ export default function PesananPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const handleStatusChange = (orderId, newStatus) => {
     setOrders(prev =>
@@ -287,6 +290,7 @@ export default function PesananPage() {
     setSearchTerm('');
     setFilterStatus('');
     setFilterDate('');
+    setCurrentPage(1);
   };
 
   const filteredOrders = useMemo(() => orders.filter(order => {
@@ -297,6 +301,11 @@ export default function PesananPage() {
     const matchDate = filterDate ? order.date === filterDate : true;
     return matchSearch && matchStatus && matchDate;
   }), [orders, searchTerm, filterStatus, filterDate]);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredOrders.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredOrders, currentPage]);
 
   // Metrics
   const totalPesanan  = orders.length;
@@ -635,7 +644,7 @@ export default function PesananPage() {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map(order => {
+                paginatedOrders.map(order => {
                   const badge = statusConfig[order.status];
 
                   return (
@@ -757,6 +766,14 @@ export default function PesananPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination 10 items/page */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredOrders.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* ── [5] MODAL DETAIL PESANAN ─────────────────────────────────── */}
