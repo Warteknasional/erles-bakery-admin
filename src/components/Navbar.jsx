@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Wifi, ChevronDown } from 'lucide-react';
+import { Wifi, ChevronDown } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 
 function getFormattedDate() {
@@ -15,7 +15,6 @@ function getFormattedDate() {
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [date, setDate] = useState(getFormattedDate());
-  const [hasNotif, setHasNotif] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
@@ -94,44 +93,6 @@ export default function Navbar() {
       >
         {date}
       </div>
-
-      {/* ── Notification Bell ────────────────────────────── */}
-      <button
-        onClick={() => setHasNotif(false)}
-        title="Notifikasi Masuk"
-        style={{
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '34px',
-          height: '34px',
-          borderRadius: '6px',
-          border: '1px solid #E6DED4',
-          background: '#FAF7F2',
-          cursor: 'pointer',
-          color: '#6E5D4F',
-          transition: 'background 0.15s',
-          flexShrink: 0,
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#F0E9DF'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = '#FAF7F2'; }}
-      >
-        <Bell size={16} />
-        {hasNotif && (
-          <span
-            style={{
-              position: 'absolute',
-              top: '6px',
-              right: '6px',
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: '#DC2626',
-            }}
-          />
-        )}
-      </button>
 
       {/* ── Profile Dropdown ─────────────────────────────── */}
       <div style={{ position: 'relative' }}>

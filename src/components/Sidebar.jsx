@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Package, Wallet, LayoutDashboard, ShoppingBag, Boxes } from 'lucide-react';
+import orderService from '../services/orderService';
+import productService from '../services/productService';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -10,6 +13,60 @@ const navItems = [
 ];
 
 export default function Sidebar() {
+  const [counts, setCounts] = useState({
+    pendingOrders: 0,
+    unpaidOrders: 0,
+    lowStockProducts: 0,
+    criticalIngredients: 2,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAllBadges = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      try {
+        // 1. Pesanan baru (status: pending)
+        const pendingRes = await orderService.getOrders({ status: 'pending', per_page: 1 });
+        const pendingTotal = pendingRes?.meta?.total ?? (Array.isArray(pendingRes?.data) ? pendingRes.data.length : 0);
+
+        // 2. Tagihan belum lunas (payment_status: unpaid)
+        const unpaidRes = await orderService.getOrders({ payment_status: 'unpaid', per_page: 1 });
+        const unpaidTotal = unpaidRes?.meta?.total ?? (Array.isArray(unpaidRes?.data) ? unpaidRes.data.length : 0);
+
+        // 3. Produk stok menipis (stok <= 10)
+        let lowStockTotal = 0;
+        try {
+          const prodRes = await productService.getProducts({ all: true });
+          const prods = Array.isArray(prodRes?.data) ? prodRes.data : [];
+          lowStockTotal = prods.filter(p => p.is_active && Number(p.stok) <= 10).length;
+        } catch (_) {}
+
+        if (isMounted) {
+          setCounts({
+            pendingOrders: pendingTotal,
+            unpaidOrders: unpaidTotal,
+            lowStockProducts: lowStockTotal,
+            criticalIngredients: 2,
+          });
+        }
+      } catch (err) {
+        // Abaikan error jaringan saat logout
+      }
+    };
+
+    fetchAllBadges();
+    const interval = setInterval(fetchAllBadges, 8000);
+    window.addEventListener('focus', fetchAllBadges);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchAllBadges);
+    };
+  }, []);
+
   return (
     <aside style={{
       width: '240px',
@@ -63,44 +120,104 @@ export default function Sidebar() {
           Menu Utama
         </div>
 
-        {navItems.map(item => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '11px',
-              padding: '10px 12px',
-              borderRadius: '7px',
-              textDecoration: 'none',
-              fontSize: '13px',
-              fontWeight: isActive ? '600' : '500',
-              color: isActive ? '#FFFFFF' : '#B8A89A',
-              background: isActive ? '#2D2017' : 'transparent',
-              transition: 'background 0.12s, color 0.12s',
-              position: 'relative',
-            })}
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <span style={{
-                    position: 'absolute',
-                    left: '2px',
-                    top: '25%',
-                    bottom: '25%',
-                    width: '3px',
-                    borderRadius: '2px',
-                    background: '#C25E34',
-                  }} />
-                )}
-                <item.icon size={17} color={isActive ? '#C25E34' : '#8C7A6B'} />
-                <span>{item.label}</span>
-              </>
-            )}
-          </NavLink>
-        ))}
+        {navItems.map(item => {
+          let badge = null;
+
+          if (item.to === '/pesanan' && counts.pendingOrders > 0) {
+            badge = {
+              label: `${counts.pendingOrders} Baru`,
+              bg: '#DC2626',
+              tooltip: `${counts.pendingOrders} pesanan baru menunggu konfirmasi`,
+            };
+          } else if (item.to === '/keuangan' && counts.unpaidOrders > 0) {
+            badge = {
+              label: `${counts.unpaidOrders} Tagihan`,
+              bg: '#EA580C',
+              tooltip: `${counts.unpaidOrders} pesanan belum lunas`,
+            };
+          } else if (item.to === '/produk' && counts.lowStockProducts > 0) {
+            badge = {
+              label: `${counts.lowStockProducts} Menipis`,
+              bg: '#D97706',
+              tooltip: `${counts.lowStockProducts} produk stok mendekati batas minimum`,
+            };
+          } else if (item.to === '/stok-bahan' && counts.criticalIngredients > 0) {
+            badge = {
+              label: `${counts.criticalIngredients} Kritis`,
+              bg: '#92400E',
+              tooltip: `${counts.criticalIngredients} bahan baku mencapai batas kritis`,
+            };
+          }
+
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '11px',
+                padding: '10px 12px',
+                borderRadius: '7px',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: isActive ? '600' : '500',
+                color: isActive ? '#FFFFFF' : '#B8A89A',
+                background: isActive ? '#2D2017' : 'transparent',
+                transition: 'background 0.12s, color 0.12s',
+                position: 'relative',
+              })}
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span style={{
+                      position: 'absolute',
+                      left: '2px',
+                      top: '25%',
+                      bottom: '25%',
+                      width: '3px',
+                      borderRadius: '2px',
+                      background: '#C25E34',
+                    }} />
+                  )}
+                  <item.icon size={17} color={isActive ? '#C25E34' : '#8C7A6B'} />
+                  <span>{item.label}</span>
+                  {badge && (
+                    <span
+                      title={badge.tooltip}
+                      style={{
+                        marginLeft: 'auto',
+                        background: badge.bg,
+                        color: '#FFFFFF',
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        padding: '2px 7px',
+                        borderRadius: '10px',
+                        boxShadow: `0 0 8px ${badge.bg}66`,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: '4px',
+                          height: '4px',
+                          borderRadius: '50%',
+                          background: '#FFFFFF',
+                          display: 'inline-block',
+                        }}
+                      />
+                      {badge.label}
+                    </span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Footer / Store Badge */}

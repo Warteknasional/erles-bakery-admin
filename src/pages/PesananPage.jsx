@@ -605,6 +605,75 @@ export default function PesananPage() {
         </div>
       </div>
 
+      {/* ── [1.5] NOTIFIKASI PESANAN MASUK (ALERT BANNER) ────────────── */}
+      {pendingCount > 0 && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
+            border: '1px solid #FCD34D',
+            borderRadius: '12px',
+            padding: '14px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexWrap: 'wrap',
+            boxShadow: '0 2px 8px rgba(217, 119, 6, 0.08)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                background: '#F59E0B',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <AlertCircle size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#92400E' }}>
+                Ada {pendingCount} Pesanan Baru yang Menunggu Konfirmasi Segera!
+              </div>
+              <div style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>
+                Pelanggan telah membuat pesanan baru dari katalog web. Segera konfirmasi pesanan untuk memulai jadwal produksi dapur.
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setSelectedStatus('pending');
+              setCurrentPage(1);
+            }}
+            style={{
+              background: '#92400E',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '12.5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#78350F'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#92400E'; }}
+          >
+            Tampilkan Pesanan Menunggu ({pendingCount})
+          </button>
+        </div>
+      )}
+
       {/* ── [2] METRIC STRIP ────────────────────────────────────────── */}
       <div
         style={{
