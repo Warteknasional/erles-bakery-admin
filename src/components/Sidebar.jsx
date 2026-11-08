@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { Package, Wallet, LayoutDashboard, ShoppingBag, Boxes } from 'lucide-react';
 import orderService from '../services/orderService';
 import productService from '../services/productService';
+import { ingredientService } from '../services/ingredientService';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -43,12 +44,19 @@ export default function Sidebar() {
           lowStockTotal = prods.filter(p => p.is_active && Number(p.stok) <= 10).length;
         } catch (_) {}
 
+        // 4. Bahan baku kritis (stok <= minimum_stok * 0.5)
+        let criticalBahanTotal = 0;
+        try {
+          const ingRes = await ingredientService.getIngredients({ status: 'Kritis' });
+          criticalBahanTotal = ingRes?.meta?.total ?? (Array.isArray(ingRes?.data) ? ingRes.data.length : 0);
+        } catch (_) {}
+
         if (isMounted) {
           setCounts({
             pendingOrders: pendingTotal,
             unpaidOrders: unpaidTotal,
             lowStockProducts: lowStockTotal,
-            criticalIngredients: 2,
+            criticalIngredients: criticalBahanTotal,
           });
         }
       } catch (err) {

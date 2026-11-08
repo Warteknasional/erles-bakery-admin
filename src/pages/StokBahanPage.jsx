@@ -1,10 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Boxes, Plus, Search, Filter,
   CheckCircle2, AlertTriangle, AlertCircle,
-  RotateCcw, X, Edit2, Trash2, Tag, ChevronDown
+  RotateCcw, X, Edit2, Trash2, Tag, ChevronDown,
+  RefreshCw
 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
+import { ingredientService } from '../services/ingredientService';
+import useToast from '../hooks/useToast';
 
 // ─── Dummy Data Stok Bahan Baku Erles Bakery ──────────────────────────────────
 
@@ -187,16 +190,16 @@ function getStatusBadge(status) {
 
 // ─── Modal Form Tambah / Edit Bahan ───────────────────────────────────────────
 
-function IngredientFormModal({ item, onClose, onSave }) {
+function IngredientFormModal({ item, onClose, onSave, isSaving }) {
   const isEditing = Boolean(item);
   const [formData, setFormData] = useState({
-    id: item ? item.id : Date.now(),
-    kode: item ? item.kode : `BHN-00${Math.floor(Math.random() * 90 + 10)}`,
+    id: item ? item.id : null,
+    kode: item ? item.kode : '',
     nama: item ? item.nama : '',
     kategori: item ? item.kategori : 'Tepung',
     stok: item ? item.stok : '',
     satuan: item ? item.satuan : 'kg',
-    minimumStok: item ? item.minimumStok : '',
+    minimumStok: item ? (item.minimumStok ?? item.minimum_stok) : '',
     status: item ? item.status : 'Aman',
   });
 
@@ -215,10 +218,10 @@ function IngredientFormModal({ item, onClose, onSave }) {
     onSave({
       ...formData,
       stok: stokNum,
+      minimum_stok: minNum,
       minimumStok: minNum,
       status: computedStatus,
     });
-    onClose();
   };
 
   const fieldStyle = {
@@ -370,13 +373,14 @@ function IngredientFormModal({ item, onClose, onSave }) {
             </button>
             <button
               type="submit"
+              disabled={isSaving}
               style={{
                 padding: '8px 18px', borderRadius: '8px', border: 'none',
-                background: '#241B14', color: '#FFFFFF', fontSize: '13px', fontWeight: '600',
-                cursor: 'pointer',
+                background: isSaving ? '#6E5D4F' : '#241B14', color: '#FFFFFF', fontSize: '13px', fontWeight: '600',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
               }}
             >
-              {isEditing ? 'Simpan Perubahan' : 'Tambah Bahan'}
+              {isSaving ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Tambah Bahan')}
             </button>
           </div>
         </form>
@@ -451,6 +455,8 @@ function DeleteModal({ item, onClose, onConfirm }) {
 
 export default function StokBahanPage() {
   const [ingredients, setIngredients] = useState(initialIngredients);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('Semua Status');
   const [selectedCategory, setSelectedCategory] = useState('Semua Kategori');
@@ -459,6 +465,29 @@ export default function StokBahanPage() {
 
   const [modalState, setModalState] = useState({ isOpen: false, item: null });
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const { showSuccess, showError } = useToast();
+
+  const fetchIngredients = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await ingredientService.getIngredients({ all: true });
+      const data = Array.isArray(res?.data) ? res.data : (res?.data?.data || []);
+      if (data.length > 0) {
+        setIngredients(data.map(i => ({
+          ...i,
+          minimumStok: i.minimum_stok ?? i.minimumStok ?? 0,
+        })));
+      }
+    } catch (err) {
+      console.warn('Gagal memuat bahan baku dari server, memakai fallback lokal:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchIngredients();
+  }, [fetchIngredients]);
 
   // Metrics
   const totalBahan    = ingredients.length;
@@ -466,17 +495,60 @@ export default function StokBahanPage() {
   const bahanMenipis  = ingredients.filter(i => i.status === 'Menipis').length;
   const bahanKritis   = ingredients.filter(i => i.status === 'Kritis').length;
 
-  const handleSaveIngredient = (itemData) => {
-    if (modalState.item) {
-      setIngredients(prev => prev.map(i => i.id === itemData.id ? itemData : i));
-    } else {
-      setIngredients(prev => [itemData, ...prev]);
+  const handleSaveIngredient = async (itemData) => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        kode: itemData.kode || undefined,
+        nama: itemData.nama,
+        kategori: itemData.kategori,
+        stok: itemData.stok,
+        satuan: itemData.satuan,
+        minimum_stok: itemData.minimum_stok ?? itemData.minimumStok,
+      };
+
+      if (modalState.item?.id && typeof modalState.item.id === 'number') {
+        const res = await ingredientService.updateIngredient(modalState.item.id, payload);
+        const updated = res.data;
+        setIngredients(prev => prev.map(i => i.id === updated.id ? { ...updated, minimumStok: updated.minimum_stok } : i));
+        showSuccess('Bahan baku berhasil diperbarui');
+      } else {
+        const res = await ingredientService.createIngredient(payload);
+        const created = res.data;
+        setIngredients(prev => [{ ...created, minimumStok: created.minimum_stok }, ...prev]);
+        showSuccess('Bahan baku baru berhasil ditambahkan');
+      }
+      setModalState({ isOpen: false, item: null });
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || 'Gagal menyimpan bahan baku';
+      showError(msg);
+      // Fallback update state lokal jika backend belum running
+      if (modalState.item) {
+        setIngredients(prev => prev.map(i => i.id === itemData.id ? itemData : i));
+      } else {
+        setIngredients(prev => [{ ...itemData, id: Date.now() }, ...prev]);
+      }
+      setModalState({ isOpen: false, item: null });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleDeleteIngredient = (id) => {
-    setIngredients(prev => prev.filter(i => i.id !== id));
-    setDeleteTarget(null);
+  const handleDeleteIngredient = async (id) => {
+    try {
+      if (typeof id === 'number') {
+        await ingredientService.deleteIngredient(id);
+      }
+      setIngredients(prev => prev.filter(i => i.id !== id));
+      showSuccess('Bahan baku berhasil dihapus');
+    } catch (err) {
+      console.error(err);
+      showError(err.response?.data?.message || 'Gagal menghapus bahan baku');
+      setIngredients(prev => prev.filter(i => i.id !== id));
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   const filteredIngredients = useMemo(() => {
@@ -565,28 +637,50 @@ export default function StokBahanPage() {
           </div>
         </div>
 
-        <button
-          onClick={() => setModalState({ isOpen: true, item: null })}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px 14px',
-            borderRadius: '8px',
-            border: 'none',
-            background: '#241B14',
-            color: '#FFFFFF',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'background 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#3D2D22'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#241B14'; }}
-        >
-          <Plus size={15} />
-          Tambah Bahan Baku
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={fetchIngredients}
+            title="Refresh Data"
+            disabled={loading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              border: '1px solid #E6DED4',
+              background: '#FFFFFF',
+              color: '#6E5D4F',
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            <RefreshCw size={15} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          </button>
+
+          <button
+            onClick={() => setModalState({ isOpen: true, item: null })}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: 'none',
+              background: '#241B14',
+              color: '#FFFFFF',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#3D2D22'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#241B14'; }}
+          >
+            <Plus size={15} />
+            Tambah Bahan Baku
+          </button>
+        </div>
       </div>
 
       {/* ── [2] UNIFIED METRIC STRIP ─────────────────────────────────── */}
@@ -1004,6 +1098,7 @@ export default function StokBahanPage() {
       {modalState.isOpen && (
         <IngredientFormModal
           item={modalState.item}
+          isSaving={isSaving}
           onClose={() => setModalState({ isOpen: false, item: null })}
           onSave={handleSaveIngredient}
         />
