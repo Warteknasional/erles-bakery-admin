@@ -474,14 +474,19 @@ export default function PesananPage() {
   // Update Status Pesanan ke Backend API
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      await orderService.updateStatus(orderId, newStatus, `Diubah melalui portal admin`);
-      showToast(`Status pesanan berhasil diubah menjadi "${statusConfig[newStatus]?.label || newStatus}"`, 'success');
+      const res = await orderService.updateStatus(orderId, newStatus, `Diubah melalui portal admin`);
+      const apiMsg = res?.message;
+      const defaultMsg = `Status pesanan berhasil diubah menjadi "${statusConfig[newStatus]?.label || newStatus}"`;
+      const isIngredientDeducted = Boolean(apiMsg && apiMsg.includes('Stok bahan baku'));
+      showToast(isIngredientDeducted ? apiMsg : defaultMsg, 'success', isIngredientDeducted ? 12000 : 4000);
+      const updatedCatatan = res?.data?.catatan;
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus, catatan: updatedCatatan || o.catatan } : o))
       );
       if (activeModalOrder && activeModalOrder.id === orderId) {
-        setActiveModalOrder((prev) => ({ ...prev, status: newStatus }));
+        setActiveModalOrder((prev) => ({ ...prev, status: newStatus, catatan: updatedCatatan || prev.catatan }));
       }
+      window.dispatchEvent(new Event('focus'));
       loadOrders();
     } catch (err) {
       const msg = err.response?.data?.message || 'Gagal mengubah status pesanan.';

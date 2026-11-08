@@ -3,7 +3,7 @@ import {
   Boxes, Plus, Search, Filter,
   CheckCircle2, AlertTriangle, AlertCircle,
   RotateCcw, X, Edit2, Trash2, Tag, ChevronDown,
-  RefreshCw
+  RefreshCw, Clock
 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
 import { ingredientService } from '../services/ingredientService';
@@ -222,6 +222,7 @@ function IngredientFormModal({ item, onClose, onSave, isSaving }) {
       minimumStok: minNum,
       status: computedStatus,
     });
+    onClose();
   };
 
   const fieldStyle = {
@@ -451,6 +452,187 @@ function DeleteModal({ item, onClose, onConfirm }) {
   );
 }
 
+// ─── Modal Riwayat Pemakaian Produksi Dapur ───────────────────────────────────
+
+function ProductionHistoryModal({ isOpen, onClose, logs, loadingHistory }) {
+  if (!isOpen) return null;
+
+  const formatDateTime = (iso) => {
+    if (!iso) return '-';
+    try {
+      return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  };
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 1099,
+          background: 'rgba(36, 27, 20, 0.45)', backdropFilter: 'blur(2px)',
+        }}
+      />
+      <div
+        style={{
+          position: 'fixed', zIndex: 1100,
+          top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'min(640px, calc(100vw - 32px))',
+          maxHeight: '85vh',
+          background: '#FFFFFF',
+          borderRadius: '12px',
+          border: '1px solid #E6DED4',
+          boxShadow: '0 16px 40px rgba(36, 27, 20, 0.14)',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: '18px 24px',
+            borderBottom: '1px solid #EFEAE3',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}
+        >
+          <div>
+            <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#241B14', margin: '0 0 2px' }}>
+              Riwayat Pemakaian Bahan Baku Dapur
+            </h2>
+            <p style={{ fontSize: '12px', color: '#8C7A6B', margin: 0 }}>
+              Daftar pesanan produksi yang otomatis memotong stok bahan baku gudang
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', color: '#8C7A6B',
+              cursor: 'pointer', padding: '4px', borderRadius: '4px',
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '18px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {loadingHistory ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: '#8C7A6B', fontSize: '13px' }}>
+              Memuat riwayat pemakaian bahan baku...
+            </div>
+          ) : !logs || logs.length === 0 ? (
+            <div style={{ padding: '36px 24px', textAlign: 'center', color: '#8C7A6B', fontSize: '13px' }}>
+              Belum ada riwayat pemotongan bahan baku dari produksi pesanan.
+            </div>
+          ) : (
+            logs.map((log) => (
+              <div
+                key={log.order_id}
+                style={{
+                  border: '1px solid #E6DED4',
+                  borderRadius: '10px',
+                  padding: '14px 16px',
+                  background: '#FAF7F2',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#241B14' }}>
+                        {log.kode_pesanan}
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#6E5D4F', fontWeight: '500' }}>
+                        • {log.customer_name}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#5C4A3C', marginTop: '3px' }}>
+                      <strong>Item Diproduksi:</strong> {(log.products || []).join(', ')}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#8C7A6B', whiteSpace: 'nowrap' }}>
+                    {formatDateTime(log.deducted_at)}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#7D6B5C', marginBottom: '6px' }}>
+                    BAHAN BAKU TERPAKAI:
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {(log.ingredients || []).map((ing) => (
+                      <span
+                        key={ing.id || ing.kode}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 9px',
+                          borderRadius: '6px',
+                          background: '#FFFFFF',
+                          border: '1px solid #E2D5C6',
+                          fontSize: '12px',
+                          color: '#241B14',
+                          fontWeight: '500',
+                        }}
+                      >
+                        <span>{ing.nama}</span>
+                        <strong style={{ color: '#B45309' }}>-{ing.qty} {ing.satuan}</strong>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            padding: '12px 24px',
+            borderTop: '1px solid #EFEAE3',
+            background: '#FAF7F2',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span style={{ fontSize: '12px', color: '#7D6B5C' }}>
+            Total {logs?.length || 0} produksi pesanan tercatat
+          </span>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '7px 16px',
+              borderRadius: '8px',
+              border: '1px solid #D4C5B9',
+              background: '#FFFFFF',
+              color: '#241B14',
+              fontSize: '12.5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+            }}
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Main Page Component ──────────────────────────────────────────────────────
 
 export default function StokBahanPage() {
@@ -465,7 +647,24 @@ export default function StokBahanPage() {
 
   const [modalState, setModalState] = useState({ isOpen: false, item: null });
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyLogs, setHistoryLogs] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const { showSuccess, showError } = useToast();
+
+  const fetchHistory = useCallback(async () => {
+    setLoadingHistory(true);
+    try {
+      const res = await ingredientService.getHistory();
+      if (Array.isArray(res?.data)) {
+        setHistoryLogs(res.data);
+      }
+    } catch (_) {
+      // Ignore history fetch error on fallback
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, []);
 
   const fetchIngredients = useCallback(async () => {
     setLoading(true);
@@ -478,12 +677,13 @@ export default function StokBahanPage() {
           minimumStok: i.minimum_stok ?? i.minimumStok ?? 0,
         })));
       }
+      fetchHistory();
     } catch (err) {
       console.warn('Gagal memuat bahan baku dari server, memakai fallback lokal:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchHistory]);
 
   useEffect(() => {
     fetchIngredients();
@@ -656,6 +856,47 @@ export default function StokBahanPage() {
             }}
           >
             <RefreshCw size={15} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          </button>
+
+          <button
+            onClick={() => {
+              fetchHistory();
+              setShowHistoryModal(true);
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              border: '1px solid #D4C5B9',
+              background: '#FFFFFF',
+              color: '#241B14',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#FAF7F2'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; }}
+          >
+            <Clock size={15} color="#6E5D4F" />
+            <span>Riwayat Pemakaian</span>
+            {historyLogs.length > 0 && (
+              <span
+                style={{
+                  background: '#FAF0E6',
+                  color: '#8C5A2B',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  padding: '1px 6px',
+                  borderRadius: '999px',
+                  border: '1px solid #E6D2B5',
+                }}
+              >
+                {historyLogs.length}
+              </span>
+            )}
           </button>
 
           <button
@@ -1111,6 +1352,13 @@ export default function StokBahanPage() {
           onConfirm={handleDeleteIngredient}
         />
       )}
+
+      <ProductionHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        logs={historyLogs}
+        loadingHistory={loadingHistory}
+      />
 
     </div>
   );

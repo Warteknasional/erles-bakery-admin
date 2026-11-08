@@ -25,4 +25,10 @@ export const ingredientService = {
     const response = await api.delete(`/ingredients/${id}`);
     return response.data;
   },
+
+  getHistory: async () => {
+    const response = await api.get('/ingredients/history');
+    return response.data;
+  },
 };
+
