@@ -26,3 +26,5 @@ dist-ssr
 # Agent temporary and skill caches
 .agent
 .taste-skill
+
+.netlify/
