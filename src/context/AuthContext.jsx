@@ -105,18 +105,15 @@ export function AuthProvider({ children }) {
 
       return receivedUser;
     } catch (err) {
-      // If backend is offline or unreachable from Netlify, provide graceful demo fallback for seeded credentials
-      const cleanEmail = (email || '').trim().toLowerCase();
-      const isSeededCredential =
-        (cleanEmail === 'admin@erlesbakery.com' || cleanEmail === 'staff@erlesbakery.com') &&
-        (password === 'password' || !err?.response);
-
-      if (!err?.response && isSeededCredential) {
-        const isStaff = cleanEmail.includes('staff');
+      // If backend is offline or unreachable (e.g. deployed on Netlify without live public API),
+      // allow instant demo session fallback so admin dashboard can always be accessed and explored
+      if (!err?.response) {
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const isStaff = cleanEmail.includes('staff') || cleanEmail.includes('kasir');
         const demoUser = {
           id: isStaff ? 2 : 1,
-          name: isStaff ? 'Staff Erles' : 'Admin Erles',
-          email: cleanEmail,
+          name: isStaff ? 'Staff Erles (Demo)' : 'Admin Erles (Demo)',
+          email: cleanEmail || 'admin@erlesbakery.com',
           role: isStaff ? 'karyawan' : 'admin',
           phone: isStaff ? '081234567891' : '081234567890',
         };
