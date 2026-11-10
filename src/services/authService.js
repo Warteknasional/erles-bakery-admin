@@ -1,36 +1,30 @@
 import api from './api';
 
 export const authService = {
-  async login(email, password) {
-    try {
-      const { data } = await api.post('/login', { email, password });
-      return data;
-    } catch (err) {
-      if (err.success === false) return err;
-      return { success: false, message: 'Login gagal.' };
-    }
+  /**
+   * Login user with email & password
+   * @param {{ email: string, password: string }} credentials
+   */
+  async login(credentials) {
+    const response = await api.post('/login', credentials);
+    return response.data;
   },
 
+  /**
+   * Get current authenticated user profile
+   */
   async me() {
-    try {
-      const { data } = await api.get('/me');
-      return data;
-    } catch (err) {
-      if (err.success === false) return err;
-      return { success: false, message: 'Gagal mengambil profil.' };
-    }
+    const response = await api.get('/me');
+    return response.data;
   },
 
+  /**
+   * Revoke current user token
+   */
   async logout() {
-    try {
-      const { data } = await api.post('/logout');
-      return data;
-    } catch (err) {
-      if (err.success === false) return err;
-      return { success: false, message: 'Logout gagal.' };
-    }
+    const response = await api.post('/logout');
+    return response.data;
   },
 };
 
 export default authService;
-

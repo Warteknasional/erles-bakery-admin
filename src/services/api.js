@@ -1,16 +1,17 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  baseURL: import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 });
 
+// Request interceptor to attach Bearer token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -19,38 +20,26 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Response interceptor to handle 401 Unauthorized
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response) {
-      const { status, data } = error.response;
+    if (error.response && error.response.status === 401) {
+      // Don't auto-redirect if the 401 is from the login endpoint itself (wrong credentials)
+      const requestUrl = error.config?.url || '';
+      const isLoginRequest = requestUrl.includes('/login');
 
-      if (status === 401) {
-        localStorage.removeItem('auth_token');
+      if (!isLoginRequest) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
-        return Promise.reject(error);
       }
-
-      if (status === 422) {
-        return Promise.reject({
-          success: false,
-          message: data.message || 'Validasi gagal.',
-          errors: data.errors || {},
-        });
-      }
-
-      return Promise.reject({
-        success: false,
-        message: data.message || `Error ${status}`,
-      });
     }
-
-    return Promise.reject({
-      success: false,
-      message: 'Tidak dapat terhubung ke server. Periksa koneksi internet.',
-    });
+    return Promise.reject(error);
   }
 );
 

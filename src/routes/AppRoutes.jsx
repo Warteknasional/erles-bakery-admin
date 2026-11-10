@@ -1,45 +1,34 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import DashboardLayout from '../layouts/DashboardLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
+import AdminLayout from '../components/layout/AdminLayout';
+import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import PesananPage from '../pages/PesananPage';
 import KeuanganPage from '../pages/KeuanganPage';
-import LoginPage from '../pages/LoginPage';
-import NotFoundPage from '../pages/NotFoundPage';
-import { useAuth } from '../hooks/useAuth';
+import ProdukPage from '../pages/ProdukPage';
+import StokBahanPage from '../pages/StokBahanPage';
 
 export default function AppRoutes() {
   const { isAuthenticated, loading } = useAuth();
 
   return (
     <Routes>
-      {/* Login — redirect ke / jika sudah login */}
-      <Route
-        path="/login"
-        element={
-          !loading && isAuthenticated ? (
-            <Navigate to="/" replace />
-          ) : (
-            <LoginPage />
-          )
-        }
-      />
+      {/* Rute Publik */}
+      <Route path="/login" element={<LoginPage />} />
 
-      {/* Dashboard shell — dilindungi ProtectedRoute */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/pesanan" element={<PesananPage />} />
-        <Route path="/keuangan" element={<KeuanganPage />} />
+      {/* Rute Terproteksi (Wajib Login Backend) */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AdminLayout />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/pesanan" element={<PesananPage />} />
+          <Route path="/keuangan" element={<KeuanganPage />} />
+          <Route path="/produk" element={<ProdukPage />} />
+          <Route path="/stok-bahan" element={<StokBahanPage />} />
+        </Route>
       </Route>
 
-      {/* 404 catch-all */}
-      <Route path="*" element={<NotFoundPage />} />
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
