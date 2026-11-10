@@ -4,7 +4,7 @@ import {
   Clock, CheckCircle2, AlertCircle, XCircle,
   TrendingUp, ArrowUpRight, ArrowDownRight,
   Store, Smartphone, Globe, ArrowRight, RefreshCw,
-  Plus, Check, ChevronRight, Flame, Loader2
+  Plus, Check, ChevronRight, Flame
 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
 import dashboardService from '../services/dashboardService';

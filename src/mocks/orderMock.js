@@ -1,8 +1,8 @@
 /**
- * Mock data pesanan — bentuk response sesuai kontrak API backend.
+ * Mock data pesanan Erles Bakery — bentuk response sesuai kontrak API backend.
  * Envelope: { success, message, data, meta }
- * Field: id, kode_pesanan, customer_name, customer_phone, alamat, catatan,
- *        tanggal_ambil, total_price, status, items[], created_at
+ * Produk: Sourdough Country Boule, Olive & Rosemary Ciabatta, French Baguette Tradisi,
+ *         Donat Kentang Gula Halus, Donat Coklat Almond Panggang, Hampers Lebaran Deluxe.
  */
 
 const mockOrders = [
@@ -11,19 +11,19 @@ const mockOrders = [
     kode_pesanan: 'ORD-20261001-0001',
     customer_name: 'Budi Santoso',
     customer_phone: '081234567890',
-    alamat: 'Jl. Merpati No. 12, Bandung',
-    catatan: 'Tolong dikemas rapi',
+    alamat: 'Jl. Soekarno Hatta No. 12, Lowokwaru, Malang',
+    catatan: 'Tolong dikemas rapi untuk sarapan keluarga',
     tanggal_ambil: '2026-10-05',
-    total_price: 545000,
+    total_price: 395000,
     status: 'pending',
     items: [
       {
-        id: 1, product_id: 12, qty: 2, unit_price: 250000, subtotal: 500000,
-        product: { id: 12, nama: 'Hampers Lebaran Classic', harga: 250000 },
+        id: 1, product_id: 6, qty: 1, unit_price: 350000, subtotal: 350000,
+        product: { id: 6, nama: 'Hampers Lebaran Deluxe', harga: 350000 },
       },
       {
-        id: 2, product_id: 5, qty: 1, unit_price: 45000, subtotal: 45000,
-        product: { id: 5, nama: 'Brownies Panggang', harga: 45000 },
+        id: 2, product_id: 1, qty: 1, unit_price: 45000, subtotal: 45000,
+        product: { id: 1, nama: 'Sourdough Country Boule', harga: 45000 },
       },
     ],
     created_at: '2026-10-01T08:30:00.000000Z',
@@ -33,19 +33,19 @@ const mockOrders = [
     kode_pesanan: 'ORD-20261001-0002',
     customer_name: 'Siti Aminah',
     customer_phone: '081298765432',
-    alamat: 'Jl. Kenanga No. 7, Jakarta Selatan',
-    catatan: null,
+    alamat: 'Jl. Ijen No. 25, Klojen, Kota Malang',
+    catatan: 'Kirim via kurir instan Malang',
     tanggal_ambil: '2026-10-06',
-    total_price: 180000,
+    total_price: 92000,
     status: 'diproses',
     items: [
       {
-        id: 3, product_id: 3, qty: 2, unit_price: 55000, subtotal: 110000,
-        product: { id: 3, nama: 'Nastar Premium', harga: 55000 },
+        id: 3, product_id: 2, qty: 1, unit_price: 32000, subtotal: 32000,
+        product: { id: 2, nama: 'Olive & Rosemary Ciabatta', harga: 32000 },
       },
       {
-        id: 4, product_id: 8, qty: 1, unit_price: 70000, subtotal: 70000,
-        product: { id: 8, nama: 'Red Velvet Cake Mini', harga: 70000 },
+        id: 4, product_id: 5, qty: 5, unit_price: 12000, subtotal: 60000,
+        product: { id: 5, nama: 'Donat Coklat Almond Panggang', harga: 12000 },
       },
     ],
     created_at: '2026-10-01T09:15:00.000000Z',
@@ -55,19 +55,19 @@ const mockOrders = [
     kode_pesanan: 'ORD-20261001-0003',
     customer_name: 'Ahmad Fauzi',
     customer_phone: '085612345678',
-    alamat: 'Jl. Mawar No. 4, Jakarta Selatan',
-    catatan: 'Kirim sebelum jam 10 pagi',
+    alamat: 'Jl. Bendungan Sigura-gura No. 18, Sukun, Malang',
+    catatan: 'Ambil di dapur jam 07.30 pagi',
     tanggal_ambil: '2026-10-04',
-    total_price: 450000,
+    total_price: 136000,
     status: 'selesai',
     items: [
       {
-        id: 5, product_id: 12, qty: 1, unit_price: 250000, subtotal: 250000,
-        product: { id: 12, nama: 'Hampers Lebaran Classic', harga: 250000 },
+        id: 5, product_id: 3, qty: 2, unit_price: 28000, subtotal: 56000,
+        product: { id: 3, nama: 'French Baguette Tradisi', harga: 28000 },
       },
       {
-        id: 6, product_id: 1, qty: 4, unit_price: 50000, subtotal: 200000,
-        product: { id: 1, nama: 'Roti Sobek Coklat', harga: 50000 },
+        id: 6, product_id: 4, qty: 10, unit_price: 8000, subtotal: 80000,
+        product: { id: 4, nama: 'Donat Kentang Gula Halus', harga: 8000 },
       },
     ],
     created_at: '2026-10-01T10:00:00.000000Z',
@@ -77,15 +77,15 @@ const mockOrders = [
     kode_pesanan: 'ORD-20261002-0004',
     customer_name: 'Dewi Lestari',
     customer_phone: '087812345678',
-    alamat: 'Jl. Anggrek No. 22, Bogor',
+    alamat: 'Jl. Kalpataru No. 45, Lowokwaru, Malang',
     catatan: 'Dibatalkan oleh pelanggan',
     tanggal_ambil: '2026-10-07',
-    total_price: 120000,
+    total_price: 90000,
     status: 'dibatalkan',
     items: [
       {
-        id: 7, product_id: 2, qty: 3, unit_price: 40000, subtotal: 120000,
-        product: { id: 2, nama: 'Roti Tawar Gandum', harga: 40000 },
+        id: 7, product_id: 1, qty: 2, unit_price: 45000, subtotal: 90000,
+        product: { id: 1, nama: 'Sourdough Country Boule', harga: 45000 },
       },
     ],
     created_at: '2026-10-02T07:00:00.000000Z',
@@ -95,161 +95,87 @@ const mockOrders = [
     kode_pesanan: 'ORD-20261002-0005',
     customer_name: 'Rina Wati',
     customer_phone: '082112345678',
-    alamat: 'Jl. Dahlia No. 9, Depok',
-    catatan: 'Minta kantong kertas',
+    alamat: 'Jl. Danau Toba Raya G6, Sawojajar, Malang',
+    catatan: 'Tambahkan kartu ucapan kustom',
     tanggal_ambil: '2026-10-08',
     total_price: 350000,
     status: 'pending',
     items: [
       {
-        id: 8, product_id: 10, qty: 1, unit_price: 350000, subtotal: 350000,
-        product: { id: 10, nama: 'Hampers Spesial Ramadhan', harga: 350000 },
+        id: 8, product_id: 6, qty: 1, unit_price: 350000, subtotal: 350000,
+        product: { id: 6, nama: 'Hampers Lebaran Deluxe', harga: 350000 },
       },
     ],
     created_at: '2026-10-02T08:30:00.000000Z',
-  },
-  {
-    id: 6,
-    kode_pesanan: 'ORD-20261002-0006',
-    customer_name: 'Joko Widodo',
-    customer_phone: '081345678901',
-    alamat: 'Jl. Sudirman No. 100, Jakarta Pusat',
-    catatan: null,
-    tanggal_ambil: '2026-10-09',
-    total_price: 625000,
-    status: 'diproses',
-    items: [
-      {
-        id: 9, product_id: 12, qty: 2, unit_price: 250000, subtotal: 500000,
-        product: { id: 12, nama: 'Hampers Lebaran Classic', harga: 250000 },
-      },
-      {
-        id: 10, product_id: 4, qty: 1, unit_price: 125000, subtotal: 125000,
-        product: { id: 4, nama: 'Kue Lapis Legit', harga: 125000 },
-      },
-    ],
-    created_at: '2026-10-02T09:45:00.000000Z',
-  },
-  {
-    id: 7,
-    kode_pesanan: 'ORD-20261002-0007',
-    customer_name: 'Maria Sari',
-    customer_phone: '082234567890',
-    alamat: 'Jl. Melati No. 15, Tangerang',
-    catatan: 'Untuk acara ulang tahun',
-    tanggal_ambil: '2026-10-10',
-    total_price: 285000,
-    status: 'pending',
-    items: [
-      {
-        id: 11, product_id: 8, qty: 2, unit_price: 70000, subtotal: 140000,
-        product: { id: 8, nama: 'Red Velvet Cake Mini', harga: 70000 },
-      },
-      {
-        id: 12, product_id: 6, qty: 1, unit_price: 145000, subtotal: 145000,
-        product: { id: 6, nama: 'Tart Ulang Tahun Custom', harga: 145000 },
-      },
-    ],
-    created_at: '2026-10-02T11:00:00.000000Z',
-  },
-  {
-    id: 8,
-    kode_pesanan: 'ORD-20261003-0008',
-    customer_name: 'Hendra Gunawan',
-    customer_phone: '085698765432',
-    alamat: 'Jl. Pahlawan No. 33, Bekasi',
-    catatan: null,
-    tanggal_ambil: '2026-10-11',
-    total_price: 190000,
-    status: 'selesai',
-    items: [
-      {
-        id: 13, product_id: 3, qty: 2, unit_price: 55000, subtotal: 110000,
-        product: { id: 3, nama: 'Nastar Premium', harga: 55000 },
-      },
-      {
-        id: 14, product_id: 7, qty: 2, unit_price: 40000, subtotal: 80000,
-        product: { id: 7, nama: 'Donat Gula Halus', harga: 40000 },
-      },
-    ],
-    created_at: '2026-10-03T07:30:00.000000Z',
   },
 ];
 
 /**
  * Simulasi delay jaringan (300-600ms).
  */
-function simulateDelay() {
-  return new Promise((resolve) =>
-    setTimeout(resolve, 300 + Math.random() * 300)
-  );
-}
+const delay = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/**
- * Bungkus data dalam envelope standar API.
- */
-function envelope(data, message = 'Berhasil.', meta = null) {
-  const result = { success: true, message, data };
-  if (meta) result.meta = meta;
-  return result;
-}
+export const mockOrderService = {
+  async getOrders(params = {}) {
+    await delay();
+    let filtered = [...mockOrders];
 
-/**
- * GET /api/orders  — list pesanan dengan filter, search, pagination.
- */
-export async function getOrders({ status, search, page = 1, per_page = 5 } = {}) {
-  await simulateDelay();
+    if (params.status && params.status !== 'semua') {
+      filtered = filtered.filter((o) => o.status === params.status);
+    }
 
-  let filtered = [...mockOrders];
+    if (params.search) {
+      const q = params.search.toLowerCase();
+      filtered = filtered.filter(
+        (o) =>
+          o.kode_pesanan.toLowerCase().includes(q) ||
+          o.customer_name.toLowerCase().includes(q) ||
+          o.customer_phone.includes(q)
+      );
+    }
 
-  if (status) {
-    filtered = filtered.filter((o) => o.status === status);
-  }
-  if (search) {
-    const q = search.toLowerCase();
-    filtered = filtered.filter(
-      (o) =>
-        o.kode_pesanan.toLowerCase().includes(q) ||
-        o.customer_name.toLowerCase().includes(q) ||
-        o.customer_phone.includes(q)
-    );
-  }
+    const perPage = params.per_page || 10;
+    const page = params.page || 1;
+    const total = filtered.length;
+    const lastPage = Math.ceil(total / perPage) || 1;
+    const start = (page - 1) * perPage;
+    const paginated = filtered.slice(start, start + perPage);
 
-  const total = filtered.length;
-  const last_page = Math.max(1, Math.ceil(total / per_page));
-  const safePage = Math.min(Math.max(1, page), last_page);
-  const start = (safePage - 1) * per_page;
-  const data = filtered.slice(start, start + per_page);
+    return {
+      success: true,
+      message: 'Data pesanan berhasil diambil',
+      data: paginated,
+      meta: {
+        current_page: page,
+        last_page: lastPage,
+        per_page: perPage,
+        total,
+      },
+    };
+  },
 
-  return envelope(data, 'Daftar pesanan berhasil diambil.', {
-    current_page: safePage,
-    last_page,
-    per_page,
-    total,
-  });
-}
+  async getOrder(id) {
+    await delay();
+    const order = mockOrders.find((o) => o.id === Number(id));
+    if (!order) {
+      const err = new Error('Pesanan tidak ditemukan');
+      err.response = { status: 404, data: { success: false, message: 'Pesanan tidak ditemukan' } };
+      throw err;
+    }
+    return { success: true, message: 'Detail pesanan berhasil diambil', data: order };
+  },
 
-/**
- * GET /api/orders/{id}  — detail pesanan.
- */
-export async function getOrderDetail(id) {
-  await simulateDelay();
-  const order = mockOrders.find((o) => o.id === Number(id));
-  if (!order) {
-    return { success: false, message: 'Pesanan tidak ditemukan.' };
-  }
-  return envelope(order, 'Detail pesanan berhasil diambil.');
-}
+  async updateOrderStatus(id, status) {
+    await delay();
+    const order = mockOrders.find((o) => o.id === Number(id));
+    if (!order) {
+      const err = new Error('Pesanan tidak ditemukan');
+      err.response = { status: 404, data: { success: false, message: 'Pesanan tidak ditemukan' } };
+      throw err;
+    }
+    order.status = status;
+    return { success: true, message: 'Status pesanan berhasil diperbarui', data: order };
+  },
+};
 
-/**
- * PUT /api/orders/{id}/status  — ubah status pesanan.
- */
-export async function updateOrderStatus(id, newStatus) {
-  await simulateDelay();
-  const order = mockOrders.find((o) => o.id === Number(id));
-  if (!order) {
-    return { success: false, message: 'Pesanan tidak ditemukan.' };
-  }
-  order.status = newStatus;
-  return envelope(order, `Status pesanan berhasil diperbarui menjadi '${newStatus}'.`);
-}
+export default mockOrderService;

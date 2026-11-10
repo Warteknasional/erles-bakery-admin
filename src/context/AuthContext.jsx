@@ -109,13 +109,12 @@ export function AuthProvider({ children }) {
       // allow instant demo session fallback so admin dashboard can always be accessed and explored
       if (!err?.response) {
         const cleanEmail = (email || '').trim().toLowerCase();
-        const isStaff = cleanEmail.includes('staff') || cleanEmail.includes('kasir');
         const demoUser = {
-          id: isStaff ? 2 : 1,
-          name: isStaff ? 'Staff Erles (Demo)' : 'Admin Erles (Demo)',
+          id: 1,
+          name: 'Bu Erni Lestari (Owner & Baker)',
           email: cleanEmail || 'admin@erlesbakery.com',
-          role: isStaff ? 'karyawan' : 'admin',
-          phone: isStaff ? '081234567891' : '081234567890',
+          role: 'admin',
+          phone: '082145346270',
         };
         const demoToken = 'demo-session-token-' + Date.now();
 

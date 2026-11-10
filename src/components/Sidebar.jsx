@@ -239,7 +239,7 @@ export default function Sidebar() {
           color: '#8C7A6B',
           lineHeight: 1.4,
         }}>
-          <div>Cabang Utama • Jl. Melati</div>
+          <div>Dapur Utama • Jl. Ikan Gurami No. 7e, Malang</div>
           <div style={{ color: '#665343', marginTop: '2px' }}>v1.2.0 • Online Mode</div>
         </div>
       </div>

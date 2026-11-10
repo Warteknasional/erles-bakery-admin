@@ -13,7 +13,7 @@ const mockTransactions = [
   { id: 4, tipe: 'pengeluaran', nominal: 150000, kategori: 'Operasional', catatan: 'Biaya listrik bulan Oktober', tanggal: '2026-10-01', user_id: 1, order_id: null, created_at: '2026-10-01T11:00:00.000000Z' },
   { id: 5, tipe: 'pemasukan', nominal: 180000, kategori: 'Penjualan', catatan: 'Pembayaran pesanan ORD-20261001-0002', tanggal: '2026-10-02', user_id: 1, order_id: 2, created_at: '2026-10-02T07:30:00.000000Z' },
   { id: 6, tipe: 'pengeluaran', nominal: 200000, kategori: 'Bahan Baku', catatan: 'Beli mentega wisman 2 kaleng', tanggal: '2026-10-02', user_id: 1, order_id: null, created_at: '2026-10-02T08:00:00.000000Z' },
-  { id: 7, tipe: 'pengeluaran', nominal: 1200000, kategori: 'Gaji', catatan: 'Gaji karyawan bagian produksi', tanggal: '2026-10-02', user_id: 1, order_id: null, created_at: '2026-10-02T09:00:00.000000Z' },
+  { id: 7, tipe: 'pengeluaran', nominal: 450000, kategori: 'Operasional', catatan: 'Pembelian gas elpiji oven panggangan subuh', tanggal: '2026-10-02', user_id: 1, order_id: null, created_at: '2026-10-02T09:00:00.000000Z' },
   { id: 8, tipe: 'pemasukan', nominal: 625000, kategori: 'Penjualan', catatan: 'Pembayaran pesanan ORD-20261002-0006', tanggal: '2026-10-03', user_id: 1, order_id: 6, created_at: '2026-10-03T08:00:00.000000Z' },
   { id: 9, tipe: 'pengeluaran', nominal: 85000, kategori: 'Packaging', catatan: 'Beli box hampers 50 pcs', tanggal: '2026-10-03', user_id: 1, order_id: null, created_at: '2026-10-03T09:00:00.000000Z' },
   { id: 10, tipe: 'pemasukan', nominal: 190000, kategori: 'Penjualan', catatan: 'Pembayaran pesanan ORD-20261003-0008', tanggal: '2026-10-03', user_id: 1, order_id: 8, created_at: '2026-10-03T10:00:00.000000Z' },

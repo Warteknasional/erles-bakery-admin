@@ -4,14 +4,133 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Panel admin Erles Bakery — kelola pesanan dan keuangan toko roti" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <title>Erles Bakery — Admin</title>
+    <title>Erles Bakery Micro ERP – Portal Administrasi Pesanan, Keuangan & Stok Malang</title>
+    <meta
+      name="description"
+      content="Sistem informasi manajemen pesanan made-to-order, pencatatan transaksi keuangan masuk/keluar, dan pemantauan stok bahan baku Erles Bakery oleh Bu Erni Lestari di Lowokwaru, Kota Malang."
+    />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="author" content="Bu Erni Lestari — Erles Bakery" />
+    <link rel="canonical" href="https://erlesbakery-admin.netlify.app/" />
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:site_name" content="Erles Bakery Micro ERP" />
+    <meta property="og:title" content="Erles Bakery Micro ERP – Portal Administrasi Pesanan, Keuangan & Stok Malang" />
+    <meta
+      property="og:description"
+      content="Sistem informasi manajemen pesanan made-to-order, pencatatan transaksi keuangan masuk/keluar, dan pemantauan stok bahan baku Erles Bakery oleh Bu Erni Lestari di Lowokwaru, Kota Malang."
+    />
+    <meta property="og:url" content="https://erlesbakery-admin.netlify.app/" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&family=Work+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Structured Data JSON-LD (Schema.org WebApplication & Organization) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "@id": "https://erlesbakery-admin.netlify.app/#app",
+            "name": "Erles Bakery Micro ERP",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "All modern browsers",
+            "url": "https://erlesbakery-admin.netlify.app/",
+            "description": "Portal administrasi internal untuk pengelolaan pesanan made-to-order, pencatatan transaksi kas masuk/keluar, dan inventaris bahan baku dapur Erles Bakery Malang.",
+            "creator": {
+              "@type": "Organization",
+              "name": "Erles Bakery",
+              "founder": {
+                "@type": "Person",
+                "name": "Bu Erni Lestari",
+                "jobTitle": "Owner & Head Baker"
+              },
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "Jl. Ikan Gurami Gg. II No.7e, Tunjungsekar, Kec. Lowokwaru",
+                "addressLocality": "Kota Malang",
+                "addressRegion": "Jawa Timur",
+                "postalCode": "65143",
+                "addressCountry": "ID"
+              }
+            }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://erlesbakery-admin.netlify.app/#org",
+            "name": "Erles Bakery",
+            "url": "https://erlesbakery.netlify.app/",
+            "founder": {
+              "@type": "Person",
+              "name": "Bu Erni Lestari"
+            },
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Jl. Ikan Gurami Gg. II No.7e, Tunjungsekar, Kec. Lowokwaru",
+              "addressLocality": "Kota Malang",
+              "addressRegion": "Jawa Timur",
+              "postalCode": "65143",
+              "addressCountry": "ID"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Static Semantic Shell for Non-JS Crawlers & Fallback -->
+    <div id="root">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 24px; color: #2D2017; line-height: 1.6;">
+        <header style="text-align: center; border-bottom: 2px solid #EAE0D5; padding-bottom: 20px; margin-bottom: 30px;">
+          <p style="text-transform: uppercase; letter-spacing: 0.1em; color: #C25E34; font-size: 12px; font-weight: 700; margin: 0 0 6px 0;">
+            Portal Administrasi Usaha Mandiri • Dapur Lowokwaru Kota Malang
+          </p>
+          <h1 style="font-size: 26px; font-weight: 800; color: #241B14; margin: 0;">
+            Erles Bakery Micro ERP — Portal Administrasi Dapur Malang
+          </h1>
+          <p style="font-size: 14px; color: #7A6658; margin: 8px 0 0 0;">
+            Pengelola Tunggal: <strong>Bu Erni Lestari</strong> (Owner & Head Baker) • <a href="https://erlesbakery.netlify.app/" style="color: #C25E34;">Buka Web Toko Publik</a>
+          </p>
+        </header>
+
+        <section aria-labelledby="modul-operasional">
+          <h2 id="modul-operasional" style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">
+            Ringkasan 4 Modul Operasional Dapur Erles:
+          </h2>
+          <ul style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+            <li style="border: 1px solid #EAE0D5; padding: 16px; border-radius: 10px; background: #FAF7F2;">
+              <h3 style="margin: 0 0 6px 0; font-size: 16px; color: #C25E34;">1. Kelola Pesanan Made-to-Order</h3>
+              <p style="margin: 0; font-size: 13px; color: #5C4B3E;">Penerimaan order online, verifikasi bukti bayar QRIS, penjadwalan panggangan subuh, dan status pengiriman kurir instan Malang.</p>
+            </li>
+            <li style="border: 1px solid #EAE0D5; padding: 16px; border-radius: 10px; background: #FAF7F2;">
+              <h3 style="margin: 0 0 6px 0; font-size: 16px; color: #C25E34;">2. Transaksi & Rekap Keuangan</h3>
+              <p style="margin: 0; font-size: 13px; color: #5C4B3E;">Pencatatan arus kas riil (pemasukan penjualan, belanja bahan baku harian, listrik oven gas, dan laba operasional bersih).</p>
+            </li>
+            <li style="border: 1px solid #EAE0D5; padding: 16px; border-radius: 10px; background: #FAF7F2;">
+              <h3 style="margin: 0 0 6px 0; font-size: 16px; color: #C25E34;">3. Katalog Produk & Hampers</h3>
+              <p style="margin: 0; font-size: 13px; color: #5C4B3E;">Manajemen 6 produk unggulan (Sourdough, Ciabatta, Baguette, Donat Kentang, Hampers) beserta harga dan ketersediaan stok.</p>
+            </li>
+            <li style="border: 1px solid #EAE0D5; padding: 16px; border-radius: 10px; background: #FAF7F2;">
+              <h3 style="margin: 0 0 6px 0; font-size: 16px; color: #C25E34;">4. Stok Bahan Baku & Peringatan</h3>
+              <p style="margin: 0; font-size: 13px; color: #5C4B3E;">Monitoring inventaris tepung protein tinggi, kentang segar Malang, mentega murni, dan ragi alami agar selalu mencukupi sebelum jam panggangan subuh.</p>
+            </li>
+          </ul>
+        </section>
+
+        <footer style="margin-top: 40px; padding-top: 16px; border-top: 1px solid #EAE0D5; text-align: center; font-size: 12.5px; color: #8C7A6B;">
+          <p style="margin: 0;">📍 Jl. Ikan Gurami Gg. II No.7e, Tunjungsekar, Kec. Lowokwaru, Kota Malang, Jawa Timur 65143</p>
+          <p style="margin: 4px 0 0 0;">© 2026 Erles Bakery. Hak cipta dilindungi undang-undang.</p>
+        </footer>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

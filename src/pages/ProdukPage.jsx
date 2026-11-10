@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-  ShoppingBag, Plus, Search, Filter,
-  RotateCcw, X, Edit2, Trash2, Tag, ChevronDown,
+  Plus, Search,
+  RotateCcw, X, Edit2, Trash2,
   AlertTriangle, RefreshCw
 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';

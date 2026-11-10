@@ -60,7 +60,7 @@ export default function LoginPage() {
           setGeneralError(data.message || `Terjadi kesalahan dari server backend (Kode: ${status}).`);
         }
       } else if (err.request) {
-        setGeneralError('Tidak dapat terhubung ke server backend API (http://localhost:8000). Pastikan backend aktif.');
+        setGeneralError('Tidak dapat terhubung ke server backend API. Pastikan server backend aktif dan koneksi internet stabil.');
       } else {
         setGeneralError('Terjadi kesalahan saat memproses login.');
       }
@@ -304,7 +304,7 @@ export default function LoginPage() {
             color: '#8C7A6B',
           }}
         >
-          <p style={{ margin: '0 0 10px 0', fontWeight: '500' }}>Akun Bawaan (Klik untuk mengisi cepat):</p>
+          <p style={{ margin: '0 0 10px 0', fontWeight: '500' }}>Pemilik Usaha (Klik untuk mengisi cepat):</p>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <button
               type="button"
@@ -313,36 +313,20 @@ export default function LoginPage() {
                 setPassword('password');
               }}
               style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
+                padding: '8px 16px',
+                borderRadius: '8px',
                 border: '1px solid #E6DED4',
                 backgroundColor: '#FAF7F2',
                 color: '#241B14',
-                fontSize: '11.5px',
+                fontSize: '12px',
                 fontWeight: '600',
                 cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
               }}
             >
-              👑 Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('staff@erlesbakery.com');
-                setPassword('password');
-              }}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                border: '1px solid #E6DED4',
-                backgroundColor: '#FAF7F2',
-                color: '#241B14',
-                fontSize: '11.5px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
-            >
-              🧑‍🍳 Kasir / Staff
+              <span>👩‍🍳 Bu Erni Lestari (Owner & Baker)</span>
             </button>
           </div>
         </div>
