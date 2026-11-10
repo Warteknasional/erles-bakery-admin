@@ -296,7 +296,7 @@ export default function LoginPage() {
 
         <div
           style={{
-            marginTop: '24px',
+            marginTop: '20px',
             paddingTop: '16px',
             borderTop: '1px solid #F3EDE6',
             textAlign: 'center',
@@ -304,7 +304,47 @@ export default function LoginPage() {
             color: '#8C7A6B',
           }}
         >
-          Masuk dengan akun admin atau kasir yang terdaftar di database Laravel.
+          <p style={{ margin: '0 0 10px 0', fontWeight: '500' }}>Akun Bawaan (Klik untuk mengisi cepat):</p>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin@erlesbakery.com');
+                setPassword('password');
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: '1px solid #E6DED4',
+                backgroundColor: '#FAF7F2',
+                color: '#241B14',
+                fontSize: '11.5px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+            >
+              👑 Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('staff@erlesbakery.com');
+                setPassword('password');
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: '1px solid #E6DED4',
+                backgroundColor: '#FAF7F2',
+                color: '#241B14',
+                fontSize: '11.5px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+            >
+              🧑‍🍳 Kasir / Staff
+            </button>
+          </div>
         </div>
       </div>
     </div>
