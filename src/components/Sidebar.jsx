@@ -91,8 +91,19 @@ export default function Sidebar() {
     }}>
       {/* Brand Header */}
       <div style={{ marginBottom: '32px', padding: '0 10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '20px' }}>🍞</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img
+            src="/logo.jpg"
+            alt="Erles Bakery"
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              flexShrink: 0,
+              border: '1.5px solid rgba(255,255,255,0.18)',
+            }}
+          />
           <div>
             <h2 style={{
               color: '#FFFFFF',

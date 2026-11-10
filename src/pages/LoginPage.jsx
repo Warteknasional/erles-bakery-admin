@@ -95,22 +95,19 @@ export default function LoginPage() {
       >
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div
+          <img
+            src="/logo.jpg"
+            alt="Erles Bakery"
             style={{
-              width: '54px',
-              height: '54px',
-              borderRadius: '14px',
-              background: '#2D2017',
-              border: '1px solid #3F2E22',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '26px',
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              display: 'inline-block',
               marginBottom: '14px',
+              border: '1px solid #E6DED4',
             }}
-          >
-            🍞
-          </div>
+          />
           <h1 style={{ fontSize: '21px', fontWeight: '700', color: '#241B14', margin: 0, letterSpacing: '-0.02em' }}>
             Erles Bakery
           </h1>
