@@ -94,19 +94,43 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
+  const [hoveredPointIndex, setHoveredPointIndex] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Filter independen untuk Tren Penjualan
+  const [filterPenjualan, setFilterPenjualan] = useState('seminggu'); // 'seminggu' | 'bulan'
+  const [selectedTahunPenjualan, setSelectedTahunPenjualan] = useState(new Date().getFullYear());
+  const [metricPenjualan, setMetricPenjualan] = useState('qty'); // 'qty' (Pcs Terjual) | 'omzet' (Rupiah)
+
+  // Filter independen untuk Produk Terlaris
+  const [filterProduk, setFilterProduk] = useState('seminggu'); // 'seminggu' | 'bulan' | 'all'
   const ITEMS_PER_PAGE = 10;
 
   const todayStr = useMemo(() => getTodayFormatted(), []);
 
-  // Muat data dari Backend API
-  const fetchDashboardData = useCallback(async (isSilent = false) => {
-    if (!isSilent) setLoading(true);
+  // Muat data dari Backend API dengan filter independen
+  const fetchDashboardData = useCallback(async (
+    isSilent = false,
+    rentang = filterPenjualan,
+    tahun = selectedTahunPenjualan,
+    rentangProduk = filterProduk
+  ) => {
+    if (!isSilent && !dashboardData) setLoading(true);
     try {
-      const response = await dashboardService.getDashboard();
+      const response = await dashboardService.getDashboard({
+        rentang,
+        tahun,
+        rentang_produk: rentangProduk,
+      });
       if (response && response.data) {
-        setDashboardData(response.data);
+        setDashboardData((prev) => ({
+          ...prev,
+          ...response.data,
+          ringkasan: {
+            ...(prev?.ringkasan || {}),
+            ...(response.data.ringkasan || {}),
+          },
+        }));
         const mappedOrders = (response.data.pesanan_terbaru || []).map((o) => ({
           id: o.kode_pesanan || `ORD-${o.id}`,
           orderDbId: o.id,
@@ -129,11 +153,11 @@ export default function DashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [showToast]);
+  }, [showToast, dashboardData, filterPenjualan, selectedTahunPenjualan, filterProduk]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    fetchDashboardData(Boolean(dashboardData), filterPenjualan, selectedTahunPenjualan, filterProduk);
+  }, [filterPenjualan, selectedTahunPenjualan, filterProduk]);
 
   // Konfirmasi pesanan langsung di tabel ke backend API
   const handleConfirmOrder = async (orderDbId, displayId) => {
@@ -167,29 +191,65 @@ export default function DashboardPage() {
   const saldoKas = ringkasan.saldo ?? ringkasan.laba ?? 0;
   const totalPesananMasuk = ringkasan.total_orders ?? orders.length;
 
-  // Tren Harian Penjualan 7 Hari
+  // Tren Penjualan Data (Nominal Omzet & Qty Pcs)
   const trendHarian = useMemo(() => {
     if (dashboardData?.trend_harian && dashboardData.trend_harian.length > 0) {
       return dashboardData.trend_harian.map((t) => ({
         day: t.hari || 'Hari',
         date: t.tanggal || '',
         nominal: Number(t.pemasukan) || 0,
+        qty: Number(t.qty) || 0,
       }));
     }
     return [
-      { day: 'Senin', date: '', nominal: 0 },
-      { day: 'Selasa', date: '', nominal: 0 },
-      { day: 'Rabu', date: '', nominal: 0 },
-      { day: 'Kamis', date: '', nominal: 0 },
-      { day: 'Jumat', date: '', nominal: 0 },
-      { day: 'Sabtu', date: '', nominal: 0 },
-      { day: 'Minggu', date: '', nominal: 0 },
+      { day: 'Sen', date: '', nominal: 0, qty: 0 },
+      { day: 'Sel', date: '', nominal: 0, qty: 0 },
+      { day: 'Rab', date: '', nominal: 0, qty: 0 },
+      { day: 'Kam', date: '', nominal: 0, qty: 0 },
+      { day: 'Jum', date: '', nominal: 0, qty: 0 },
+      { day: 'Sab', date: '', nominal: 0, qty: 0 },
+      { day: 'Min', date: '', nominal: 0, qty: 0 },
     ];
   }, [dashboardData]);
 
-  const maxNominal = Math.max(...trendHarian.map((d) => d.nominal), 1);
-  const totalMingguIni = trendHarian.reduce((sum, d) => sum + d.nominal, 0);
-  const avgHarian = Math.round(totalMingguIni / Math.max(trendHarian.length, 1));
+  const isMetricQty = metricPenjualan === 'qty';
+  const totalQty = useMemo(() => trendHarian.reduce((sum, d) => sum + d.qty, 0), [trendHarian]);
+  const totalOmzet = useMemo(() => trendHarian.reduce((sum, d) => sum + d.nominal, 0), [trendHarian]);
+  const avgQty = Math.round(totalQty / Math.max(trendHarian.length, 1));
+  const avgOmzet = Math.round(totalOmzet / Math.max(trendHarian.length, 1));
+
+  const currentTotal = isMetricQty ? totalQty : totalOmzet;
+  const currentAvg = isMetricQty ? avgQty : avgOmzet;
+
+  // Konfigurasi Sumbu Y & Garis Grid Proporsional (Skala Standar Bakery: 0 - 200 pcs)
+  const yAxisConfig = useMemo(() => {
+    if (isMetricQty) {
+      const rawMax = Math.max(...trendHarian.map((d) => d.qty), 0);
+      let step = 40;
+      let maxVal = 200;
+      if (rawMax > 200) {
+        step = Math.ceil(rawMax / 5 / 20) * 20;
+        maxVal = step * 5;
+      }
+      const ticks = [0, step, step * 2, step * 3, step * 4, maxVal];
+      return {
+        maxVal,
+        ticks,
+        formatTick: (v) => `${v} pcs`,
+      };
+    } else {
+      const rawMax = Math.max(...trendHarian.map((d) => d.nominal), 0);
+      const baseMax = Math.max(rawMax, 1000000);
+      const step = Math.ceil(baseMax / 5 / 50000) * 50000;
+      const maxVal = step * 5;
+      const ticks = [0, step, step * 2, step * 3, step * 4, maxVal];
+      return {
+        maxVal,
+        ticks,
+        formatTick: (v) => (v === 0 ? 'Rp 0' : v >= 1000000 ? `${(v / 1000000).toFixed(1)}jt` : `${Math.round(v / 1000)}rb`),
+      };
+    }
+  }, [isMetricQty, trendHarian]);
 
   // Produk Terlaris untuk Monitor Dapur & Penjualan
   const produkTerlaris = dashboardData?.produk_terlaris || [];
@@ -324,33 +384,6 @@ export default function DashboardPage() {
           >
             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
             {refreshing ? 'Memperbarui...' : 'Perbarui'}
-          </button>
-
-          <button
-            onClick={() => navigate('/pesanan')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#241B14',
-              color: '#FFFFFF',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#3D2D22';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#241B14';
-            }}
-          >
-            <Plus size={15} />
-            Kelola Pesanan
           </button>
         </div>
       </div>
@@ -533,7 +566,7 @@ export default function DashboardPage() {
           alignItems: 'stretch',
         }}
       >
-        {/* Kolom Kiri: Tren Pendapatan 7 Hari */}
+        {/* Kolom Kiri: Tren Penjualan (Pcs Terjual / Omzet Rp) */}
         <div
           style={{
             background: '#FFFFFF',
@@ -542,160 +575,344 @@ export default function DashboardPage() {
             padding: '22px 24px',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',
             boxShadow: '0 1px 2px rgba(36,27,20,0.03)',
           }}
         >
-          <div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div
               style={{
                 display: 'flex',
-                alignItems: 'baseline',
+                alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: '4px',
+                flexWrap: 'wrap',
+                gap: '8px',
+                marginBottom: '10px',
               }}
             >
-              <h2
-                style={{
-                  fontSize: '15px',
-                  fontWeight: '700',
-                  color: '#241B14',
-                  margin: 0,
-                }}
-              >
-                Tren Penjualan 7 Hari Terakhir
-              </h2>
-              <span
-                style={{
-                  fontSize: '12.5px',
-                  color: '#6E5D4F',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                Total: <strong style={{ color: '#241B14' }}>{formatRupiah(totalMingguIni)}</strong>
-              </span>
-            </div>
-            <p
-              style={{
-                fontSize: '12px',
-                color: '#8C7A6B',
-                margin: '0 0 20px 0',
-              }}
-            >
-              Rata-rata penjualan harian {formatRupiah(avgHarian)}
-            </p>
-
-            {/* Crisp Column Chart */}
-            <div
-              style={{
-                height: '175px',
-                display: 'flex',
-                alignItems: 'flex-end',
-                gap: '12px',
-                paddingBottom: '26px',
-                borderBottom: '1px solid #EFEAE3',
-                position: 'relative',
-              }}
-            >
-              {/* Reference Baseline Guide */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: `${Math.round((avgHarian / maxNominal) * 140) + 26}px`,
-                  borderBottom: '1px dashed #D9CFC4',
-                  pointerEvents: 'none',
-                }}
-              >
-                <span
+              <div>
+                <h2
                   style={{
-                    position: 'absolute',
-                    right: 0,
-                    bottom: '2px',
-                    fontSize: '10px',
-                    color: '#9C8B7E',
-                    background: '#FFFFFF',
-                    paddingLeft: '4px',
+                    fontSize: '15px',
+                    fontWeight: '700',
+                    color: '#241B14',
+                    margin: 0,
                   }}
                 >
-                  Rata-rata {formatRupiah(avgHarian)}
+                  Tren Penjualan {filterPenjualan === 'bulan' ? `Tahun ${selectedTahunPenjualan} (Bulanan)` : '7 Hari Terakhir'}
+                </h2>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    color: '#6E5D4F',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  Total:{' '}
+                  <strong style={{ color: '#241B14' }}>
+                    {isMetricQty ? `${currentTotal} Pcs Terjual` : formatRupiah(currentTotal)}
+                  </strong>
+                  {' • '}
+                  Rata-rata: <strong style={{ color: '#241B14' }}>{isMetricQty ? `${currentAvg} pcs` : formatRupiah(currentAvg)}</strong>
+                  {' / '}{filterPenjualan === 'bulan' ? 'bulan' : 'hari'}
                 </span>
               </div>
 
-              {trendHarian.map((item, idx) => {
-                const heightPx = Math.max(Math.round((item.nominal / maxNominal) * 140), 6);
-                const isToday = idx === trendHarian.length - 1;
-                const isHovered = hoveredBarIndex === idx;
-
-                return (
-                  <div
-                    key={idx}
-                    onMouseEnter={() => setHoveredBarIndex(idx)}
-                    onMouseLeave={() => setHoveredBarIndex(null)}
+              {/* Kontrol Filter & Switcher Metrik */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                {/* Switcher Metrik: Pcs Terjual vs Omzet Rp */}
+                <div
+                  style={{
+                    display: 'flex',
+                    background: '#FAF7F2',
+                    borderRadius: '8px',
+                    border: '1px solid #D4C5B9',
+                    padding: '2px',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setMetricPenjualan('qty')}
+                    title="Tampilkan berdasarkan jumlah unit/pcs roti yang laku"
                     style={{
-                      flex: 1,
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'flex-end',
-                      alignItems: 'center',
-                      position: 'relative',
+                      padding: '3px 9px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      fontSize: '11px',
+                      fontWeight: '600',
                       cursor: 'pointer',
+                      background: isMetricQty ? '#C25E34' : 'transparent',
+                      color: isMetricQty ? '#FFFFFF' : '#6E5D4F',
+                      transition: 'background 0.15s, color 0.15s',
                     }}
                   >
-                    {/* Tooltip on hover */}
-                    {isHovered && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: '-32px',
-                          background: '#241B14',
-                          color: '#FFFFFF',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          padding: '3px 7px',
-                          borderRadius: '4px',
-                          whiteSpace: 'nowrap',
-                          zIndex: 10,
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                        }}
-                      >
-                        {item.day}: {formatRupiah(item.nominal)}
-                      </div>
+                    Pcs Terjual
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMetricPenjualan('omzet')}
+                    title="Tampilkan berdasarkan total nominal pendapatan (Rp)"
+                    style={{
+                      padding: '3px 9px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      background: !isMetricQty ? '#C25E34' : 'transparent',
+                      color: !isMetricQty ? '#FFFFFF' : '#6E5D4F',
+                      transition: 'background 0.15s, color 0.15s',
+                    }}
+                  >
+                    Omzet (Rp)
+                  </button>
+                </div>
+
+                {/* Filter Waktu Khusus Tren Penjualan */}
+                <select
+                  value={filterPenjualan}
+                  onChange={(e) => setFilterPenjualan(e.target.value)}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid #D4C5B9',
+                    background: '#FAF7F2',
+                    color: '#4A2E17',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="seminggu">7 Hari Terakhir</option>
+                  <option value="bulan">Bulanan (Jan - Des)</option>
+                </select>
+
+                {/* Dropdown Pilihan Tahun (2026 - 2030) jika mode Bulan */}
+                {filterPenjualan === 'bulan' && (
+                  <select
+                    value={selectedTahunPenjualan}
+                    onChange={(e) => setSelectedTahunPenjualan(Number(e.target.value))}
+                    style={{
+                      padding: '5px 8px',
+                      borderRadius: '8px',
+                      border: '1px solid #D4C5B9',
+                      background: '#FFFFFF',
+                      color: '#4A2E17',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  >
+                    {[2026, 2027, 2028, 2029, 2030].map((yr) => (
+                      <option key={yr} value={yr}>{yr}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            {/* Container Grafik dengan Sumbu X dan Sumbu Y Lengkap */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: '280px',
+                position: 'relative',
+                marginTop: '10px',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {(() => {
+                const svgW = 660;
+                const svgH = 275;
+                const padL = 60; // Ruang bersih untuk skala Sumbu Y di sisi kiri
+                const padR = 20;
+                const padT = 16;
+                const padB = 24; // Ruang label Sumbu X di bawah
+                const uW = svgW - padL - padR;
+                const uH = svgH - padT - padB;
+                const count = Math.max(trendHarian.length, 1);
+                const maxVal = Math.max(yAxisConfig.maxVal, 1);
+
+                const points = trendHarian.map((item, idx) => {
+                  const val = isMetricQty ? item.qty : item.nominal;
+                  const x = padL + (idx / Math.max(count - 1, 1)) * uW;
+                  const y = padT + uH - (val / maxVal) * uH;
+                  return { ...item, val, x, y };
+                });
+
+                const lineD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+                const areaD = `${lineD} L ${points[points.length - 1].x.toFixed(1)} ${padT + uH} L ${points[0].x.toFixed(1)} ${padT + uH} Z`;
+                const avgY = padT + uH - (currentAvg / maxVal) * uH;
+
+                return (
+                  <svg
+                    viewBox={`0 0 ${svgW} ${svgH}`}
+                    style={{ width: '100%', height: '100%', minHeight: '280px', overflow: 'visible' }}
+                  >
+                    <defs>
+                      <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#C25E34" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#C25E34" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* ── [A] SUMBU Y: Garis Grid Horizontal & Skala Angka Sisi Kiri ── */}
+                    {yAxisConfig.ticks.map((tick, tIdx) => {
+                      const yPos = padT + uH - (tick / maxVal) * uH;
+                      const isBaseline = tick === 0;
+
+                      return (
+                        <g key={tIdx}>
+                          {/* Garis Horizontal Grid */}
+                          <line
+                            x1={padL}
+                            y1={yPos}
+                            x2={padL + uW}
+                            y2={yPos}
+                            stroke={isBaseline ? '#D9CFC4' : '#F0EBE1'}
+                            strokeDasharray={isBaseline ? 'none' : '3 3'}
+                            strokeWidth={isBaseline ? 1.5 : 1}
+                          />
+                          {/* Label Angka Sumbu Y */}
+                          <text
+                            x={padL - 10}
+                            y={yPos + 3.5}
+                            textAnchor="end"
+                            fontSize="10.5"
+                            fill="#8C7A6B"
+                            fontWeight="500"
+                          >
+                            {yAxisConfig.formatTick(tick)}
+                          </text>
+                        </g>
+                      );
+                    })}
+
+                    {/* Garis batas rata-rata */}
+                    {currentAvg > 0 && (
+                      <g>
+                        <line
+                          x1={padL}
+                          y1={avgY}
+                          x2={padL + uW}
+                          y2={avgY}
+                          stroke="#C25E34"
+                          strokeDasharray="4 4"
+                          strokeOpacity="0.75"
+                        />
+                        <text
+                          x={padL + uW}
+                          y={avgY - 4}
+                          textAnchor="end"
+                          fontSize="9.5"
+                          fill="#C25E34"
+                          fontWeight="600"
+                        >
+                          Rata-rata: {isMetricQty ? `${currentAvg} pcs` : formatRupiah(currentAvg)}
+                        </text>
+                      </g>
                     )}
 
-                    {/* Column Bar */}
-                    <div
-                      style={{
-                        width: '100%',
-                        maxWidth: '36px',
-                        height: `${heightPx}px`,
-                        borderRadius: '4px 4px 0 0',
-                        background: isToday
-                          ? '#C25E34'
-                          : isHovered
-                            ? '#A47E65'
-                            : '#D4C3B3',
-                        transition: 'background 0.15s, height 0.2s',
-                      }}
+                    {/* ── [B] BODY GRAFIK: Line Chart Presisi ── */}
+                    {/* Area gradien & Garis tren */}
+                    <path d={areaD} fill="url(#trendGradient)" />
+                    <path
+                      d={lineD}
+                      fill="none"
+                      stroke="#C25E34"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
 
-                    {/* Day Label */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: '-22px',
-                        fontSize: '11.5px',
-                        fontWeight: isToday ? '700' : '500',
-                        color: isToday ? '#C25E34' : '#7D6B5C',
-                      }}
-                    >
-                      {item.day.slice(0, 3)}
-                    </div>
-                  </div>
+                    {/* Titik data interaktif */}
+                    {points.map((p, idx) => {
+                      const isHovered = hoveredPointIndex === idx;
+
+                      return (
+                        <g key={idx}>
+                          <circle
+                            cx={p.x}
+                            cy={p.y}
+                            r={16}
+                            fill="transparent"
+                            style={{ cursor: 'pointer' }}
+                            onMouseEnter={() => setHoveredPointIndex(idx)}
+                            onMouseLeave={() => setHoveredPointIndex(null)}
+                          />
+                          <circle
+                            cx={p.x}
+                            cy={p.y}
+                            r={isHovered ? 6 : 4}
+                            fill={isHovered ? '#C25E34' : '#FFFFFF'}
+                            stroke="#C25E34"
+                            strokeWidth="2.5"
+                            style={{ pointerEvents: 'none', transition: 'all 0.15s ease' }}
+                          />
+                        </g>
+                      );
+                    })}
+
+                    {/* ── [C] SUMBU X: Label Waktu di Bawah Garis Dasar ── */}
+                    {points.map((p, idx) => {
+                      const isHovered = hoveredPointIndex === idx;
+                      const labelText = p.day.length > 4 ? p.day.slice(0, 3) : p.day;
+
+                      return (
+                        <text
+                          key={idx}
+                          x={p.x}
+                          y={svgH - 6}
+                          textAnchor="middle"
+                          fontSize="11"
+                          fontWeight={isHovered ? '700' : '500'}
+                          fill={isHovered ? '#C25E34' : '#7D6B5C'}
+                          style={{ pointerEvents: 'none' }}
+                        >
+                          {labelText}
+                        </text>
+                      );
+                    })}
+
+                    {/* ── [D] FLOATING TOOLTIP ── */}
+                    {hoveredPointIndex !== null && points[hoveredPointIndex] && (
+                      (() => {
+                        const p = points[hoveredPointIndex];
+                        const boxW = 160;
+                        const boxH = 28;
+                        const tooltipX = Math.min(Math.max(p.x - boxW / 2, padL), svgW - boxW - padR);
+                        const tooltipY = Math.max(p.y - boxH - 8, 4);
+
+                        return (
+                          <g style={{ pointerEvents: 'none' }}>
+                            <rect
+                              x={tooltipX}
+                              y={tooltipY}
+                              width={boxW}
+                              height={boxH}
+                              rx={6}
+                              fill="#241B14"
+                              opacity={0.95}
+                            />
+                            <text
+                              x={tooltipX + boxW / 2}
+                              y={tooltipY + 18}
+                              textAnchor="middle"
+                              fill="#FFFFFF"
+                              fontSize="11"
+                              fontWeight="600"
+                            >
+                              {p.day}: {p.qty} Pcs ({formatRupiah(p.nominal)})
+                            </text>
+                          </g>
+                        );
+                      })()
+                    )}
+                  </svg>
                 );
-              })}
+              })()}
             </div>
           </div>
 
@@ -704,42 +921,27 @@ export default function DashboardPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginTop: '14px',
+              marginTop: '4px',
+              paddingTop: '6px',
               fontSize: '12px',
               color: '#8C7A6B',
+              flexShrink: 0,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '9px', height: '9px', background: '#C25E34', borderRadius: '2px' }} />
-                Hari Ini
+                <span style={{ width: '12px', height: '3px', background: '#C25E34', borderRadius: '2px' }} />
+                Tren Penjualan ({isMetricQty ? 'Pcs Roti Terjual' : 'Omzet Penjualan Rp'})
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '9px', height: '9px', background: '#D4C3B3', borderRadius: '2px' }} />
-                Hari Sebelumnya
+                <span style={{ width: '14px', height: '0', borderBottom: '1px dashed #C25E34' }} />
+                Rata-rata Periode
               </span>
             </div>
-            <button
-              onClick={() => navigate('/keuangan')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#8C5A37',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: 0,
-              }}
-            >
-              Rincian Kas <ChevronRight size={13} />
-            </button>
           </div>
         </div>
 
-        {/* Kolom Kanan: Produk Terlaris / Monitor Penjualan */}
+        {/* Kolom Kanan: Produk Terlaris / Monitor Penjualan (Filter Mandiri) */}
         <div
           style={{
             background: '#FFFFFF',
@@ -774,18 +976,41 @@ export default function DashboardPage() {
                   Produk Terlaris
                 </h2>
               </div>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: '#7D6B5C',
-                  background: '#F7F3EE',
-                  padding: '2px 7px',
-                  borderRadius: '4px',
-                }}
-              >
-                Top Penjualan
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Filter Mandiri Khusus Produk Terlaris */}
+                <select
+                  value={filterProduk}
+                  onChange={(e) => setFilterProduk(e.target.value)}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid #D4C5B9',
+                    background: '#FAF7F2',
+                    color: '#4A2E17',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="seminggu">7 Hari</option>
+                  <option value="bulan">Bulan Ini</option>
+                  <option value="all">Semua Waktu</option>
+                </select>
+
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: '#7D6B5C',
+                    background: '#F7F3EE',
+                    padding: '2px 7px',
+                    borderRadius: '4px',
+                  }}
+                >
+                  Top Penjualan
+                </span>
+              </div>
             </div>
             <p
               style={{

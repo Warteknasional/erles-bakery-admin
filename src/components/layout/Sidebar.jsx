@@ -64,21 +64,17 @@ export default function Sidebar({ isOpen, onClose }) {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
+            <img
+              src="/logo.jpg"
+              alt="Logo Toko"
               style={{
                 width: '38px',
                 height: '38px',
                 borderRadius: '10px',
-                background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '20px',
-                boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                objectFit: 'cover',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
               }}
-            >
-              🥖
-            </div>
+            />
             <div>
               <h1
                 style={{

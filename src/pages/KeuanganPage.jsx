@@ -287,6 +287,7 @@ export default function KeuanganPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [selectedDetailTx, setSelectedDetailTx] = useState(null);
 
   // Ambil Transaksi & Ringkasan dari Backend API
   const loadFinanceData = useCallback(async () => {
@@ -302,15 +303,27 @@ export default function KeuanganPage() {
       }
 
       if (txRes?.data) {
-        const mapped = txRes.data.map((t) => ({
-          id: t.id,
-          tipe: t.tipe,
-          nominal: Number(t.nominal) || 0,
-          kategori: t.kategori || 'Operasional',
-          catatan: t.catatan || '-',
-          tanggal: t.tanggal || (t.created_at ? t.created_at.split('T')[0] : '-'),
-          user: t.user?.name || 'Admin',
-        }));
+        const mapped = txRes.data.map((t) => {
+          let jamWib = '-';
+          if (t.created_at) {
+            try {
+              const d = new Date(t.created_at);
+              jamWib = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+            } catch {}
+          }
+          return {
+            id: t.id,
+            tipe: t.tipe,
+            nominal: Number(t.nominal) || 0,
+            kategori: t.kategori || 'Operasional',
+            catatan: t.catatan || '-',
+            tanggal: t.tanggal || (t.created_at ? t.created_at.split('T')[0] : '-'),
+            jam: jamWib,
+            user: t.user?.name || 'Admin',
+            order_id: t.order_id,
+            order_code: t.order?.kode_pesanan,
+          };
+        });
         setTransactions(mapped);
       }
     } catch (err) {
@@ -718,7 +731,7 @@ export default function KeuanganPage() {
                   fontWeight: '600',
                 }}
               >
-                <th style={{ padding: '10px 18px' }}>Tanggal</th>
+                <th style={{ padding: '10px 18px' }}>Waktu & Tanggal</th>
                 <th style={{ padding: '10px 18px' }}>Jenis</th>
                 <th style={{ padding: '10px 18px' }}>Kategori</th>
                 <th style={{ padding: '10px 18px' }}>Keterangan</th>
@@ -746,14 +759,16 @@ export default function KeuanganPage() {
                   return (
                     <tr
                       key={tx.id}
+                      onClick={() => setSelectedDetailTx(tx)}
                       style={{
                         borderBottom: '1px solid #F3EDE6',
                         transition: 'background 0.1s',
+                        cursor: 'pointer',
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.background = '#FAF7F2')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = '#FFFFFF')}
                     >
-                      {/* Tanggal */}
+                      {/* Tanggal & Jam */}
                       <td
                         style={{
                           padding: '12px 18px',
@@ -763,7 +778,8 @@ export default function KeuanganPage() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {tx.tanggal}
+                        <div style={{ fontWeight: '600', color: '#241B14' }}>{tx.tanggal}</div>
+                        <div style={{ fontSize: '11px', color: '#8C7A6B' }}>{tx.jam}</div>
                       </td>
 
                       {/* Jenis Badge */}
@@ -825,7 +841,10 @@ export default function KeuanganPage() {
                       {/* Aksi */}
                       <td style={{ padding: '12px 18px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <button
-                          onClick={() => setDeleteTarget(tx)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTarget(tx);
+                          }}
                           title="Hapus Transaksi"
                           style={{
                             padding: '5px',
@@ -925,6 +944,117 @@ export default function KeuanganPage() {
               >
                 Ya, Hapus
               </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── [6] MODAL DETAIL TRANSAKSI (POP-UP) ────────────────────── */}
+      {selectedDetailTx && (
+        <>
+          <div
+            onClick={() => setSelectedDetailTx(null)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 1099,
+              background: 'rgba(36, 27, 20, 0.45)', backdropFilter: 'blur(2px)',
+            }}
+          />
+          <div
+            style={{
+              position: 'fixed', zIndex: 1100,
+              top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'min(460px, calc(100vw - 32px))',
+              background: '#FFFFFF', borderRadius: '14px',
+              border: '1px solid #E6DED4',
+              boxShadow: '0 20px 50px rgba(36, 27, 20, 0.16)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #EFEAE3',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: '#FAF7F2',
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: '#8C7A6B', letterSpacing: '0.04em' }}>
+                  RINCIAN TRANSAKSI #{selectedDetailTx.id}
+                </span>
+                <h3 style={{ margin: '2px 0 0', fontSize: '16px', fontWeight: '800', color: '#241B14' }}>
+                  {selectedDetailTx.kategori}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedDetailTx(null)}
+                style={{
+                  background: 'none', border: 'none', color: '#8C7A6B',
+                  cursor: 'pointer', padding: '4px', borderRadius: '4px',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  background: selectedDetailTx.tipe === 'pemasukan' ? '#F0FDF4' : '#FEF2F2',
+                  padding: '12px 16px', borderRadius: '10px',
+                  border: `1px solid ${selectedDetailTx.tipe === 'pemasukan' ? '#BBF7D0' : '#FECACA'}`,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '11.5px', color: selectedDetailTx.tipe === 'pemasukan' ? '#166534' : '#991B1B', fontWeight: '600' }}>
+                    {selectedDetailTx.tipe === 'pemasukan' ? 'Pemasukan Kas' : 'Pengeluaran Operasional'}
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: '800', color: selectedDetailTx.tipe === 'pemasukan' ? '#15803D' : '#DC2626' }}>
+                    {selectedDetailTx.tipe === 'pemasukan' ? '+' : '-'} {formatRupiah(selectedDetailTx.nominal)}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '11px', color: '#8C7A6B' }}>Waktu Transaksi</div>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#241B14' }}>{selectedDetailTx.jam}</div>
+                  <div style={{ fontSize: '11.5px', color: '#6E5D4F' }}>{selectedDetailTx.tanggal}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '12.5px' }}>
+                <div style={{ background: '#FAF7F2', padding: '10px 12px', borderRadius: '8px', border: '1px solid #EFEAE3' }}>
+                  <span style={{ fontSize: '11px', color: '#8C7A6B' }}>Dicatat Oleh</span>
+                  <div style={{ fontWeight: '600', color: '#241B14', marginTop: '2px' }}>{selectedDetailTx.user}</div>
+                </div>
+                <div style={{ background: '#FAF7F2', padding: '10px 12px', borderRadius: '8px', border: '1px solid #EFEAE3' }}>
+                  <span style={{ fontSize: '11px', color: '#8C7A6B' }}>Terkait Pesanan</span>
+                  <div style={{ fontWeight: '600', color: '#241B14', marginTop: '2px' }}>
+                    {selectedDetailTx.order_code || (selectedDetailTx.order_id ? `#ORD-${selectedDetailTx.order_id}` : 'Operasional Toko')}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '11.5px', color: '#8C7A6B', fontWeight: '600' }}>Keterangan / Catatan:</span>
+                <p style={{ margin: '4px 0 0', fontSize: '13.5px', color: '#241B14', background: '#FFFFFF', padding: '10px 12px', borderRadius: '8px', border: '1px solid #E6DED4', lineHeight: 1.5 }}>
+                  {selectedDetailTx.catatan || 'Tidak ada catatan tambahan.'}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDetailTx(null)}
+                  style={{
+                    padding: '8px 18px', borderRadius: '8px', border: '1px solid #E6DED4',
+                    background: '#241B14', color: '#FFFFFF', fontSize: '13px', fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Tutup Rincian
+                </button>
+              </div>
             </div>
           </div>
         </>

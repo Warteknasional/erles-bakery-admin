@@ -44,6 +44,7 @@ function OrderDetailModal({ order, onClose, onStatusChange, onPaymentAdded }) {
   const [paymentMethod, setPaymentMethod] = useState('transfer');
   const [paymentType, setPaymentType] = useState('lunas');
   const [paying, setPaying] = useState(false);
+  const [showProofLightbox, setShowProofLightbox] = useState(false);
 
   if (!order) return null;
 
@@ -178,8 +179,15 @@ function OrderDetailModal({ order, onClose, onStatusChange, onPaymentAdded }) {
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#241B14', marginTop: '2px' }}>{order.phone || '-'}</div>
             </div>
             <div>
-              <div style={{ fontSize: '11px', color: '#8C7A6B' }}>Jadwal Ambil</div>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#241B14', marginTop: '2px' }}>{order.date || '-'}</div>
+              <div style={{ fontSize: '11px', color: '#8C7A6B' }}>Jadwal Ambil / Kirim</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#241B14', marginTop: '2px' }}>
+                {order.date || '-'}
+                {order.catatan && order.catatan.includes('Waktu:') && (
+                  <span style={{ color: '#CC4A3B', marginLeft: '6px', fontSize: '12px', fontWeight: '700' }}>
+                    (Pukul {order.catatan.split('Waktu:')[1].split('•')[0].trim()})
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -352,25 +360,28 @@ function OrderDetailModal({ order, onClose, onStatusChange, onPaymentAdded }) {
                   <ImageIcon size={15} style={{ color: '#8C7A6B' }} />
                   Bukti Pembayaran (Transfer / QRIS)
                 </div>
-                <a
-                  href={order.bukti_pembayaran}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setShowProofLightbox(true)}
                   style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',
                     fontSize: '11.5px',
                     fontWeight: '600',
                     color: '#0369A1',
-                    textDecoration: 'none',
+                    padding: 0,
                   }}
                 >
-                  <ExternalLink size={13} /> Lihat Bukti Transfer
-                </a>
+                  <Eye size={13} /> Lihat Foto Besar
+                </button>
               </div>
 
               <div
+                onClick={() => setShowProofLightbox(true)}
                 style={{
                   background: '#FFFFFF',
                   border: '1px solid #EAE4DC',
@@ -378,7 +389,9 @@ function OrderDetailModal({ order, onClose, onStatusChange, onPaymentAdded }) {
                   padding: '8px',
                   display: 'flex',
                   justifyContent: 'center',
+                  cursor: 'pointer',
                 }}
+                title="Klik untuk memperbesar bukti transfer"
               >
                 <img
                   src={order.bukti_pembayaran}
@@ -426,24 +439,67 @@ function OrderDetailModal({ order, onClose, onStatusChange, onPaymentAdded }) {
           {order.payment_status !== 'paid' && (
             <div style={{ borderTop: '1px solid #EFEAE3', paddingTop: '12px' }}>
               {!showPaymentForm ? (
-                <button
-                  onClick={() => setShowPaymentForm(true)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid #D4C5B9',
-                    background: '#FAF7F2',
-                    color: '#5C4A3C',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <CreditCard size={14} /> Catat Pembayaran / DP
-                </button>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setPaymentMethod('tunai');
+                      setPaymentType('lunas');
+                      setPaymentAmount(order.sisa_pembayaran || order.total);
+                      setPaying(true);
+                      try {
+                        await orderService.addPayment(order.id, {
+                          nominal: Number(order.sisa_pembayaran || order.total),
+                          metode: 'tunai',
+                          tipe: 'lunas',
+                          tanggal: new Date().toISOString().split('T')[0],
+                          catatan: 'Diterima tunai di tempat / kasir dapur',
+                        });
+                        showToast('Pembayaran Tunai berhasil diterima! Pesanan Lunas.', 'success');
+                        onPaymentAdded();
+                      } catch (err) {
+                        showToast(err.response?.data?.message || 'Gagal mencatat pembayaran tunai.', 'error');
+                      } finally {
+                        setPaying(false);
+                      }
+                    }}
+                    disabled={paying}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: '#166534',
+                      color: '#FFFFFF',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      cursor: paying ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    <CheckCircle2 size={14} /> Terima Pembayaran Tunai (Lunas)
+                  </button>
+
+                  <button
+                    onClick={() => setShowPaymentForm(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #D4C5B9',
+                      background: '#FAF7F2',
+                      color: '#5C4A3C',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <CreditCard size={14} /> Catat DP / Sebagian
+                  </button>
+                </div>
               ) : (
                 <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#241B14' }}>
@@ -524,6 +580,103 @@ function OrderDetailModal({ order, onClose, onStatusChange, onPaymentAdded }) {
           </button>
         </div>
       </div>
+
+      {/* LIGHTBOX POP-UP BUKTI TRANSFER & UNDUH */}
+      {showProofLightbox && (
+        <div
+          onClick={() => setShowProofLightbox(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1200,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '12px',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 18px',
+                borderBottom: '1px solid #E5DCD3',
+                background: '#FAF7F2',
+              }}
+            >
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#241B14' }}>
+                Bukti Pembayaran: {order.kode} ({order.customer})
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a
+                  href={order.bukti_pembayaran}
+                  download={`Bukti_${order.kode}.jpg`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    background: '#166534',
+                    color: '#FFFFFF',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Unduh / Simpan Bukti
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowProofLightbox(false)}
+                  style={{
+                    border: 'none',
+                    background: '#EAE4DC',
+                    color: '#4A2E17',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                  }}
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+            <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', overflow: 'auto', background: '#F8F6F2' }}>
+              <img
+                src={order.bukti_pembayaran}
+                alt="Foto Bukti Pembayaran Penuh"
+                style={{
+                  maxHeight: '75vh',
+                  maxWidth: '100%',
+                  objectFit: 'contain',
+                  borderRadius: '6px',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -548,27 +701,43 @@ export default function PesananPage() {
     try {
       const response = await orderService.getOrders({ per_page: 100 });
       if (response?.data) {
-        const mapped = response.data.map((o) => ({
-          id: o.id,
-          kode: o.kode_pesanan || `ORD-${o.id}`,
-          customer: o.customer_name || 'Pelanggan Umum',
-          phone: o.customer_phone || '-',
-          total: Number(o.total_price) || 0,
-          status: o.status || 'pending',
-          payment_status: o.payment_status || 'unpaid',
-          paid_amount: Number(o.paid_amount) || 0,
-          sisa_pembayaran: Number(o.sisa_pembayaran) || 0,
-          bukti_pembayaran: o.bukti_pembayaran || null,
-          date: o.tanggal_ambil || (o.created_at ? o.created_at.split('T')[0] : '-'),
-          catatan: o.catatan || '',
-          items: Array.isArray(o.items)
-            ? o.items.map((i) => ({
-                nama: i.product?.nama || i.product_name || `Produk #${i.product_id}`,
-                qty: Number(i.qty) || 1,
-                harga: Number(i.unit_price) || 0,
-              }))
-            : [],
-        }));
+        const now = new Date();
+        const mapped = response.data.map((o) => {
+          let isExpired12h = false;
+          if (o.payment_status !== 'paid' && o.status !== 'cancelled' && o.created_at) {
+            try {
+              const createdDate = new Date(o.created_at);
+              const diffHours = (now - createdDate) / (1000 * 60 * 60);
+              if (diffHours >= 12) {
+                isExpired12h = true;
+              }
+            } catch {}
+          }
+
+          return {
+            id: o.id,
+            kode: o.kode_pesanan || `ORD-${o.id}`,
+            customer: o.customer_name || 'Pelanggan Umum',
+            phone: o.customer_phone || '-',
+            total: Number(o.total_price) || 0,
+            status: o.status || 'pending',
+            payment_status: o.payment_status || 'unpaid',
+            paid_amount: Number(o.paid_amount) || 0,
+            sisa_pembayaran: Number(o.sisa_pembayaran) || 0,
+            bukti_pembayaran: o.bukti_pembayaran || null,
+            date: o.tanggal_ambil || (o.created_at ? o.created_at.split('T')[0] : '-'),
+            created_at: o.created_at,
+            isExpired12h,
+            catatan: o.catatan || '',
+            items: Array.isArray(o.items)
+              ? o.items.map((i) => ({
+                  nama: i.product?.nama || i.product_name || `Produk #${i.product_id}`,
+                  qty: Number(i.qty) || 1,
+                  harga: Number(i.unit_price) || 0,
+                }))
+              : [],
+          };
+        });
         setOrders(mapped);
         setActiveModalOrder((prev) => (prev ? mapped.find((m) => m.id === prev.id) || prev : null));
       }
@@ -1177,26 +1346,57 @@ export default function PesananPage() {
 
                       {/* Aksi */}
                       <td style={{ padding: '12px 18px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        <button
-                          onClick={() => setActiveModalOrder(order)}
-                          title="Lihat Detail Pesanan"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '5px 10px',
-                            borderRadius: '6px',
-                            border: '1px solid #E2D9CE',
-                            background: '#FFFFFF',
-                            color: '#5C4A3C',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <Eye size={13} />
-                          Detail
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                          {order.isExpired12h && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (window.confirm(`Batalkan pesanan ${order.kode} karena belum dibayar lebih dari 12 jam?`)) {
+                                  await handleStatusChange(order.id, 'cancelled');
+                                  showToast(`Pesanan ${order.kode} dibatalkan otomatis karena kadaluarsa.`, 'info');
+                                }
+                              }}
+                              title="Pesanan kadaluarsa (>12 Jam belum bayar). Klik untuk batalkan."
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid #FECACA',
+                                background: '#FEF2F2',
+                                color: '#DC2626',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <XCircle size={12} />
+                              Batalkan (&gt;12 Jam)
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => setActiveModalOrder(order)}
+                            title="Lihat Detail Pesanan"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid #E2D9CE',
+                              background: '#FFFFFF',
+                              color: '#5C4A3C',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Eye size={13} />
+                            Detail
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

@@ -323,7 +323,7 @@ export default function LoginPage() {
                 gap: '6px',
               }}
             >
-              <span>👩‍🍳 Bu Erni Lestari (Owner & Baker)</span>
+              <span>Bu Erni Lestari (Owner & Baker)</span>
             </button>
           </div>
         </div>

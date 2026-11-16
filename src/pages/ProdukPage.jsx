@@ -1000,10 +1000,10 @@ export default function ProdukPage() {
                       onMouseEnter={(e) => (e.currentTarget.style.background = '#FAF7F2')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = '#FFFFFF')}
                     >
-                      {/* Nama Produk & Emoji */}
+                      {/* Nama Produk */}
                       <td style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '18px' }}>{p.emoji}</span>
+                          <Package size={16} color="#8C7A6B" />
                           <div>
                             <div style={{ fontWeight: '600', color: '#241B14' }}>{p.nama}</div>
                             {p.deskripsi && (
