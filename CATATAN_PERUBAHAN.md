@@ -1,9 +1,9 @@
 # Catatan Perubahan Terakhir — Portal Admin Erles Bakery ERP
 
 **Branch:** `Farhan-Ganteng`  
-**Tanggal Pembaruan:** 09 November 2026  
+**Tanggal Pembaruan:** 11 November 2026  
 
-Dokumen ini mencatat seluruh perubahan, perbaikan UI/UX, serta integrasi API yang terakhir dikerjakan pada folder `admin/` (beserta dukungan endpoint di `backend/`).
+Dokumen ini mencatat seluruh perubahan, perbaikan UI/UX, serta integrasi API yang terakhir dikerjakan pada folder `admin/` (beserta dukungan endpoint di `backend/` dan sinkronisasi di `public/`).
 
 ---
 
@@ -11,26 +11,27 @@ Dokumen ini mencatat seluruh perubahan, perbaikan UI/UX, serta integrasi API yan
 
 | File | Status | Rincian Perubahan |
 | :--- | :---: | :--- |
+| `public/logo.jpg` & `index.html` | **BARU / DIEDIT** | Menambahkan logo resmi toko (`logo.jpg`) dan mengganti favicon tab browser dari ikon roti lama menjadi logo resmi Erles Bakery. |
+| `src/components/Sidebar.jsx` & `src/pages/LoginPage.jsx` | **DIEDIT** | Mengganti ikon emoji roti (`🍞`) pada header brand sidebar kiri atas dan halaman login dengan gambar logo resmi toko (`/logo.jpg`). |
+| `src/components/Navbar.jsx` | **DIEDIT** | <ul><li>Menghapus status *Toko Buka*, *WhatsApp Order: Siap Terima Pesanan*, dan *Tanggal* pada topbar agar tampilan header bersih.</li><li>Menghapus opsi menu *Pengaturan Toko* pada dropdown profil kanan atas.</li></ul> |
+| `src/pages/PesananPage.jsx` | **DIEDIT** | <ul><li>Menambahkan fitur **Preview Bukti Pembayaran (Transfer / QRIS)**, link **Lihat Bukti Transfer**, serta tombol sekali klik **Konfirmasi Lunas** pada modal detail pesanan.</li><li>Menambahkan badge indikator **`Bukti Masuk`** pada kolom Pembayaran di tabel pesanan.</li><li>Menyeragamkan ukuran kotak pencarian (*search bar*) dan *dropdown filter* agar selaras dengan halaman Stok Bahan.</li><li>Menampilkan rincian bahan baku dapur yang otomatis berkurang pada *Toast Notification* (12 detik) saat pesanan masuk tahap produksi (`processing`).</li></ul> |
+| `src/pages/KeuanganPage.jsx` & `src/pages/ProdukPage.jsx` | **DIEDIT** | Menyeragamkan lebar dan padding *search bar* serta *dropdown filter* agar konsisten di seluruh halaman Admin. |
+| `src/routes/AppRoutes.jsx` | **DIEDIT** | Membersihkan variabel `useAuth()` yang tidak terpakai agar tidak memicu *ReferenceError* saat render awal. |
+| `src/services/api.js` | **DIEDIT** | Deteksi otomatis `localhost` agar saat pengembangan lokal terhubung ke `http://localhost:8000/api` (Docker) dan saat di-deploy ke Netlify tetap mengarah ke Railway. |
 | `src/services/ingredientService.js` | **BARU** | Service Axios untuk komunikasi ke REST API Bahan Baku (`GET`, `POST`, `PUT`, `DELETE /api/ingredients` serta `GET /api/ingredients/history`). |
-| `src/pages/StokBahanPage.jsx` | **DIEDIT** | <ul><li>Menghubungkan tabel inventaris bahan baku yang sebelumnya masih *dummy/statis* ke database PostgreSQL via REST API.</li><li>Menambahkan fitur **Tambah, Edit, Hapus, dan Refresh** bahan baku secara *real-time* dan permanen.</li><li>Memperbaiki bug UX pop-up modal form yang sebelumnya tidak langsung tertutup otomatis (`onClose()`) saat klik **Simpan Perubahan**.</li><li>Menambahkan tombol **"Riwayat Pemakaian"** di header kanan atas beserta pop-up modal `ProductionHistoryModal` untuk memantau histori bahan baku yang terpotong dari produksi pesanan.</li></ul> |
-| `src/components/Sidebar.jsx` | **DIEDIT** | Mengubah badge notifikasi merah pada menu **Stok Bahan** di sidebar kiri agar menghitung jumlah bahan berstatus **Kritis** secara dinamis langsung dari API backend (`/api/ingredients?status=Kritis`). |
-| `src/pages/PesananPage.jsx` | **DIEDIT** | <ul><li>Menampilkan rincian bahan baku dapur yang otomatis berkurang pada *Toast Notification* ketika status pesanan diubah menjadi **Diproses (`processing`)**.</li><li>Memperpanjang durasi tampil *Toast Notification* khusus pemotongan bahan baku menjadi **12 detik (`12000ms`)** agar admin sempat membaca dan memantau daftar bahan yang berkurang.</li><li>Memicu sinkronisasi otomatis badge sidebar kiri setiap kali status pesanan diperbarui.</li></ul> |
+| `src/pages/StokBahanPage.jsx` | **DIEDIT** | Integrasi penuh tabel inventaris bahan baku dengan PostgreSQL via REST API (CRUD, auto-close modal, dan pop-up **Riwayat Pemakaian** bahan baku produksi). |
 
 ---
 
-## 2. Dukungan Integrasi di Folder `backend/` (Terkait Modul Admin)
+## 2. Dukungan Integrasi di Folder `backend/` & `public/`
 
-Agar fitur di folder `admin/` berjalan penuh dengan database, berikut penambahan di sisi `backend/`:
-
-1. **Migrasi Database:**
-   - `database/migrations/2024_01_04_000001_create_ingredients_table.php`: Tabel master `ingredients` (`kode`, `nama`, `kategori`, `stok`, `satuan`, `minimum_stok`).
-   - `database/migrations/2024_01_04_000002_create_product_ingredient_table.php`: Tabel relasi resep/BOM `product_ingredient` (`product_id`, `ingredient_id`, `qty_used`) dan kolom penanda `ingredients_deducted_at` pada tabel `orders`.
-2. **Model & Logika Otomasi ERP (Bill of Materials / BOM):**
-   - `app/Models/Ingredient.php`: Kalkulasi otomatis status stok (`Aman`, `Menipis` jika `stok <= minimum_stok`, dan `Kritis` jika `stok <= 50% minimum_stok`).
-   - `app/Models/Product.php` & `app/Models/Order.php`: Method `deductIngredientsIfNeeded()` yang otomatis memotong stok bahan baku gudang tepat 1 kali saat pesanan masuk tahap produksi (`processing` / `ready` / `completed`).
-3. **Controller & Endpoint Baru:**
-   - `app/Http/Controllers/IngredientController.php`: CRUD bahan baku (`/api/ingredients`) dan endpoint histori pemakaian produksi (`/api/ingredients/history`).
-   - `database/seeders/DatabaseSeeder.php`: Seeder 13 bahan baku utama bakery beserta 64 relasi takaran resep ke seluruh produk katalog.
+1. **Fitur Upload Bukti Pembayaran (Transfer / QRIS):**
+   - `backend/database/migrations/2024_01_04_000003_add_bukti_pembayaran_to_orders_table.php`: Kolom `bukti_pembayaran` pada tabel `orders`.
+   - `backend/app/Http/Controllers/OrderController.php` & `routes/api.php`: Endpoint publik `POST /api/orders/{idOrCode}/payment-proof` untuk unggah foto bukti pembayaran (maks 5MB).
+   - `public/src/pages/LacakPesananPage.jsx` & `public/src/index.css`: Kotak unggah bukti bayar, sinkronisasi status *real-time* dari API setiap 5 detik, dan *auto-scroll* otomatis ke kartu pelacakan saat tombol Lacak diklik.
+   - `public/src/components/ScrollManager.jsx`: Penambahan `MutationObserver` agar seluruh kartu produk di tab kategori **Semua** langsung tampil tanpa harus berpindah tab terlebih dahulu.
+2. **Otomasi Bahan Baku & Resep (Bill of Materials / BOM):**
+   - Migrasi `ingredients` & `product_ingredient`, kalkulasi otomatis status stok (`Aman`, `Menipis`, `Kritis`), serta pembaruan foto produk pada `DatabaseSeeder.php`.
 
 ---
 

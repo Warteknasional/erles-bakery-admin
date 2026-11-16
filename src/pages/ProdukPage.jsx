@@ -812,7 +812,7 @@ export default function ProdukPage() {
           background: '#FFFFFF',
           borderRadius: '12px',
           border: '1px solid #E6DED4',
-          padding: '16px 20px',
+          padding: '14px 18px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -827,14 +827,13 @@ export default function ProdukPage() {
             style={{
               position: 'relative',
               minWidth: '220px',
-              maxWidth: '300px',
               flex: 1,
             }}
           >
             <Search
               size={14}
               color="#8C7A6B"
-              style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}
+              style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)' }}
             />
             <input
               type="text"
@@ -846,11 +845,11 @@ export default function ProdukPage() {
               }}
               style={{
                 width: '100%',
-                padding: '7px 10px 7px 30px',
-                borderRadius: '8px',
+                padding: '8px 12px 8px 34px',
+                borderRadius: '7px',
                 border: '1px solid #E6DED4',
                 background: '#FAF7F2',
-                fontSize: '12.5px',
+                fontSize: '13px',
                 color: '#241B14',
                 outline: 'none',
                 boxSizing: 'border-box',
@@ -866,13 +865,13 @@ export default function ProdukPage() {
               setCurrentPage(1);
             }}
             style={{
-              padding: '7px 10px',
-              borderRadius: '8px',
+              padding: '8px 10px',
+              minWidth: '150px',
+              borderRadius: '7px',
               border: '1px solid #E6DED4',
               background: '#FAF7F2',
               fontSize: '12.5px',
-              color: '#5C4A3C',
-              fontWeight: '500',
+              color: '#4A3B30',
               cursor: 'pointer',
               outline: 'none',
             }}
@@ -892,13 +891,13 @@ export default function ProdukPage() {
               setCurrentPage(1);
             }}
             style={{
-              padding: '7px 10px',
-              borderRadius: '8px',
+              padding: '8px 10px',
+              minWidth: '150px',
+              borderRadius: '7px',
               border: '1px solid #E6DED4',
               background: '#FAF7F2',
               fontSize: '12.5px',
-              color: '#5C4A3C',
-              fontWeight: '500',
+              color: '#4A3B30',
               cursor: 'pointer',
               outline: 'none',
             }}

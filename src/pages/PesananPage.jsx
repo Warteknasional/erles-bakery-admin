@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Package, ChevronDown, Search, Plus, X, Eye, ShoppingCart,
   Clock, AlertCircle, Phone, Calendar, User, FileText,
-  RotateCcw, CheckCircle2, XCircle, RefreshCw, CreditCard
+  RotateCcw, CheckCircle2, XCircle, RefreshCw, CreditCard,
+  Image as ImageIcon, ExternalLink
 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
 import orderService from '../services/orderService';
@@ -78,6 +79,28 @@ function OrderDetailModal({ order, onClose, onStatusChange, onPaymentAdded }) {
       onPaymentAdded();
     } catch (err) {
       const msg = err.response?.data?.message || 'Gagal mencatat pembayaran.';
+      showToast(msg, 'error');
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const handleConfirmFullPayment = async () => {
+    const nominal = Number(order.sisa_pembayaran || order.total);
+    if (!nominal || nominal <= 0) return;
+    setPaying(true);
+    try {
+      await orderService.addPayment(order.id, {
+        nominal,
+        metode: 'qris',
+        tipe: 'lunas',
+        tanggal: new Date().toISOString().split('T')[0],
+        catatan: 'Dikonfirmasi lunas dari bukti pembayaran pelanggan',
+      });
+      showToast('Pembayaran berhasil dikonfirmasi LUNAS!', 'success');
+      onPaymentAdded();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Gagal mengonfirmasi pelunasan.';
       showToast(msg, 'error');
     } finally {
       setPaying(false);
@@ -311,6 +334,94 @@ function OrderDetailModal({ order, onClose, onStatusChange, onPaymentAdded }) {
             </div>
           )}
 
+          {/* Bukti Pembayaran Pelanggan */}
+          {order.bukti_pembayaran && (
+            <div
+              style={{
+                background: '#FAF7F2',
+                border: '1px solid #E6DED4',
+                borderRadius: '8px',
+                padding: '12px 14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '700', color: '#241B14' }}>
+                  <ImageIcon size={15} style={{ color: '#8C7A6B' }} />
+                  Bukti Pembayaran (Transfer / QRIS)
+                </div>
+                <a
+                  href={order.bukti_pembayaran}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '11.5px',
+                    fontWeight: '600',
+                    color: '#0369A1',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <ExternalLink size={13} /> Lihat Bukti Transfer
+                </a>
+              </div>
+
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #EAE4DC',
+                  borderRadius: '6px',
+                  padding: '8px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              >
+                <img
+                  src={order.bukti_pembayaran}
+                  alt="Bukti Pembayaran"
+                  style={{
+                    maxHeight: '180px',
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    borderRadius: '4px',
+                  }}
+                />
+              </div>
+
+              {order.payment_status !== 'paid' && (
+                <button
+                  type="button"
+                  onClick={handleConfirmFullPayment}
+                  disabled={paying}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    width: '100%',
+                    padding: '9px 14px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: '#166534',
+                    color: '#FFFFFF',
+                    fontSize: '12.5px',
+                    fontWeight: '600',
+                    cursor: paying ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <CheckCircle2 size={15} />
+                  {paying
+                    ? 'Memproses Konfirmasi...'
+                    : `Konfirmasi Lunas (${formatRupiah(order.sisa_pembayaran || order.total)})`}
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Form Tambah Pembayaran */}
           {order.payment_status !== 'paid' && (
             <div style={{ borderTop: '1px solid #EFEAE3', paddingTop: '12px' }}>
@@ -447,6 +558,7 @@ export default function PesananPage() {
           payment_status: o.payment_status || 'unpaid',
           paid_amount: Number(o.paid_amount) || 0,
           sisa_pembayaran: Number(o.sisa_pembayaran) || 0,
+          bukti_pembayaran: o.bukti_pembayaran || null,
           date: o.tanggal_ambil || (o.created_at ? o.created_at.split('T')[0] : '-'),
           catatan: o.catatan || '',
           items: Array.isArray(o.items)
@@ -458,6 +570,7 @@ export default function PesananPage() {
             : [],
         }));
         setOrders(mapped);
+        setActiveModalOrder((prev) => (prev ? mapped.find((m) => m.id === prev.id) || prev : null));
       }
     } catch (err) {
       console.error('Gagal mengambil daftar pesanan:', err);
@@ -775,7 +888,7 @@ export default function PesananPage() {
           background: '#FFFFFF',
           borderRadius: '12px',
           border: '1px solid #E6DED4',
-          padding: '16px 20px',
+          padding: '14px 18px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -785,11 +898,11 @@ export default function PesananPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', flex: 1 }}>
-          <div style={{ position: 'relative', minWidth: '220px', maxWidth: '300px', flex: 1 }}>
+          <div style={{ position: 'relative', minWidth: '220px', flex: 1 }}>
             <Search
               size={14}
               color="#8C7A6B"
-              style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}
+              style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)' }}
             />
             <input
               type="text"
@@ -801,11 +914,11 @@ export default function PesananPage() {
               }}
               style={{
                 width: '100%',
-                padding: '7px 10px 7px 30px',
-                borderRadius: '8px',
+                padding: '8px 12px 8px 34px',
+                borderRadius: '7px',
                 border: '1px solid #E6DED4',
                 background: '#FAF7F2',
-                fontSize: '12.5px',
+                fontSize: '13px',
                 color: '#241B14',
                 outline: 'none',
                 boxSizing: 'border-box',
@@ -820,13 +933,13 @@ export default function PesananPage() {
               setCurrentPage(1);
             }}
             style={{
-              padding: '7px 10px',
-              borderRadius: '8px',
+              padding: '8px 10px',
+              minWidth: '150px',
+              borderRadius: '7px',
               border: '1px solid #E6DED4',
               background: '#FAF7F2',
               fontSize: '12.5px',
-              color: '#5C4A3C',
-              fontWeight: '500',
+              color: '#4A3B30',
               cursor: 'pointer',
               outline: 'none',
             }}
@@ -989,19 +1102,38 @@ export default function PesananPage() {
 
                       {/* Pembayaran Badge */}
                       <td style={{ padding: '12px 18px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '2px 7px',
-                            borderRadius: '4px',
-                            background: pBadge.bg,
-                            color: pBadge.text,
-                            fontSize: '11px',
-                            fontWeight: '600',
-                          }}
-                        >
-                          {pBadge.label}
-                        </span>
+                        <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 7px',
+                              borderRadius: '4px',
+                              background: pBadge.bg,
+                              color: pBadge.text,
+                              fontSize: '11px',
+                              fontWeight: '600',
+                            }}
+                          >
+                            {pBadge.label}
+                          </span>
+                          {order.bukti_pembayaran && order.payment_status !== 'paid' && (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                background: '#E0F2FE',
+                                color: '#0369A1',
+                                fontSize: '10px',
+                                fontWeight: '700',
+                              }}
+                            >
+                              <ImageIcon size={10} /> Bukti Masuk
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Status Badge */}

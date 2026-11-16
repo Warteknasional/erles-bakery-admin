@@ -1,28 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Wifi, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
-
-function getFormattedDate() {
-  const now = new Date();
-  return now.toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const [date, setDate] = useState(getFormattedDate());
   const [profileOpen, setProfileOpen] = useState(false);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setDate(getFormattedDate());
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
 
   return (
     <header
@@ -41,58 +23,8 @@ export default function Navbar() {
         color: '#241B14',
       }}
     >
-      {/* ── Status Toko Badge ────────────────────────────── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        fontSize: '12px',
-        color: '#6E5D4F',
-      }}>
-        <span style={{
-          width: '7px',
-          height: '7px',
-          borderRadius: '50%',
-          background: '#16A34A',
-        }} />
-        <span style={{ fontWeight: '600' }}>Toko Buka:</span>
-        <span>07:00 – 21:00 WIB</span>
-      </div>
-
       {/* ── Spacer ───────────────────────────────────────── */}
       <div style={{ flex: 1 }} />
-
-      {/* ── WhatsApp Status ──────────────────────────────── */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: '#F0FDF4',
-          border: '1px solid #DCFCE7',
-          borderRadius: '6px',
-          padding: '4px 10px',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <Wifi size={12} color="#166534" />
-        <span style={{ fontSize: '12px', fontWeight: '600', color: '#166534' }}>
-          WhatsApp Order: Siap Terima Pesanan
-        </span>
-      </div>
-
-      {/* ── Tanggal Hari Ini ─────────────────────────────── */}
-      <div
-        style={{
-          fontSize: '12px',
-          color: '#8C7A6B',
-          fontWeight: '500',
-          whiteSpace: 'nowrap',
-          padding: '0 4px',
-        }}
-      >
-        {date}
-      </div>
 
       {/* ── Profile Dropdown ─────────────────────────────── */}
       <div style={{ position: 'relative' }}>
@@ -177,27 +109,6 @@ export default function Navbar() {
                   {user?.email || 'admin@erlesbakery.com'}
                 </div>
               </div>
-
-              <button
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 14px',
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '12.5px',
-                  color: '#5C4A3C',
-                  cursor: 'pointer',
-                  transition: 'background 0.12s',
-                  fontFamily: 'inherit',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#FAF7F2'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                onClick={() => setProfileOpen(false)}
-              >
-                Pengaturan Toko
-              </button>
 
               <button
                 style={{

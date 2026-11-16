@@ -9,8 +9,6 @@ import ProdukPage from '../pages/ProdukPage';
 import StokBahanPage from '../pages/StokBahanPage';
 
 export default function AppRoutes() {
-  const { isAuthenticated, loading } = useAuth();
-
   return (
     <Routes>
       {/* Rute Publik */}
