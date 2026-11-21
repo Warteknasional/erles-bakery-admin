@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Plus, Search,
   RotateCcw, X, Edit2, Trash2,
-  AlertTriangle, RefreshCw
+  AlertTriangle, RefreshCw, Package
 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
 import productService from '../services/productService';
