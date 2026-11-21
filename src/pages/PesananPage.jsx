@@ -108,7 +108,10 @@ function OrderDetailModal({ order, onClose, onStatusChange, onPaymentAdded }) {
     }
   };
 
-  const pBadge = paymentStatusConfig[order.payment_status] || paymentStatusConfig.unpaid;
+  const pBadge =
+    order.payment_status !== 'paid' && order.bukti_pembayaran
+      ? { bg: '#E0F2FE', text: '#0369A1', label: 'Menunggu Verifikasi Bukti' }
+      : paymentStatusConfig[order.payment_status] || paymentStatusConfig.unpaid;
 
   return (
     <>
@@ -1207,7 +1210,10 @@ export default function PesananPage() {
                     dot: '#8C7A6B',
                     label: order.status,
                   };
-                  const pBadge = paymentStatusConfig[order.payment_status] || paymentStatusConfig.unpaid;
+                  const pBadge =
+    order.payment_status !== 'paid' && order.bukti_pembayaran
+      ? { bg: '#E0F2FE', text: '#0369A1', label: 'Menunggu Verifikasi Bukti' }
+      : paymentStatusConfig[order.payment_status] || paymentStatusConfig.unpaid;
 
                   return (
                     <tr

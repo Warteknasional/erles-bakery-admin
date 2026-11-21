@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Plus, Search,
   RotateCcw, X, Edit2, Trash2,
-  AlertTriangle, RefreshCw, Package
+  AlertTriangle, RefreshCw, Package, Upload, Image as ImageIcon
 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
 import productService from '../services/productService';
@@ -57,19 +57,33 @@ function ProductFormModal({ product, categories, onClose, onSave }) {
     nama: product ? product.nama : '',
     sku: product ? product.sku : `PRD-00${Math.floor(Math.random() * 90 + 10)}`,
     category_id: product?.category_id || (categories[0]?.id || 1),
-    kategori: product ? product.kategori : (categories[0]?.name || 'Roti'),
+    kategori: product ? product.kategori : (categories[0]?.name || 'Roti Manis'),
     hargaJual: product ? product.hargaJual : '',
     hpp: product ? product.hpp : '',
     stok: product ? product.stok : '',
     deskripsi: product ? product.deskripsi || '' : '',
+    gambar: product ? product.gambar || '' : '',
     status: product ? product.status : 'Tersedia',
-    emoji: product ? product.emoji : '🍞',
   });
+
+  const handleImageFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setFormData((prev) => ({ ...prev, gambar: reader.result }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const jual = parseFloat(formData.hargaJual) || 0;
-    const hpp = parseFloat(formData.hpp) || 0;
+    const hpp = formData.hpp !== '' && formData.hpp !== null
+      ? parseFloat(formData.hpp) || 0
+      : Math.round(jual * 0.55);
     const stk = parseInt(formData.stok, 10) || 0;
 
     let computedStatus = formData.status;
@@ -305,10 +319,95 @@ function ProductFormModal({ product, categories, onClose, onSave }) {
           </div>
 
           <div>
-            <label style={labelStyle}>Deskripsi Produk</label>
+            <label style={labelStyle}>Foto / Gambar Katalog Produk</label>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '8px',
+                  border: '1px solid #E6DED4',
+                  background: '#FAF7F2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                }}
+              >
+                {formData.gambar ? (
+                  <img
+                    src={formData.gambar}
+                    alt="Preview"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <ImageIcon size={22} color="#A8998C" />
+                )}
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <label
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #D4C5B9',
+                      background: '#FAF7F2',
+                      color: '#4A3B30',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Upload size={13} />
+                    Upload Foto dari Perangkat
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleImageFileChange}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  {formData.gambar && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, gambar: '' })}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid #FECACA',
+                        background: '#FEF2F2',
+                        color: '#DC2626',
+                        fontSize: '11.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Hapus
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="Atau tempel URL gambar (https://...)"
+                  value={formData.gambar.startsWith('data:') ? '' : formData.gambar}
+                  onChange={(e) => setFormData({ ...formData, gambar: e.target.value })}
+                  style={{ ...fieldStyle, fontSize: '12px', padding: '6px 10px' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Deskripsi Produk (Tampil di Katalog Web Publik)</label>
             <textarea
               rows={2}
-              placeholder="Deskripsi singkat produk untuk etalase..."
+              placeholder="Deskripsi singkat produk untuk etalase web publik..."
               value={formData.deskripsi}
               onChange={(e) => setFormData({ ...formData, deskripsi: e.target.value })}
               style={{ ...fieldStyle, resize: 'vertical' }}
@@ -496,13 +595,13 @@ export default function ProdukPage() {
             nama: p.nama,
             sku: p.slug ? p.slug.toUpperCase() : `PRD-${p.id}`,
             category_id: p.category_id,
-            kategori: p.kategori || 'Roti',
+            kategori: p.kategori || 'Roti Manis',
             hargaJual: Number(p.harga) || 0,
-            hpp: Math.round((Number(p.harga) || 0) * 0.55),
+            hpp: p.hpp !== undefined && p.hpp !== null ? Number(p.hpp) : Math.round((Number(p.harga) || 0) * 0.55),
             stok: Number(p.stok) || 0,
             deskripsi: p.deskripsi || '',
+            gambar: p.gambar || '',
             status,
-            emoji: p.kategori === 'Hampers' ? '🎁' : p.kategori === 'Kue Kering' ? '🍪' : p.kategori === 'Kue' ? '🍰' : '🍞',
           };
         });
         setProducts(mapped);
@@ -527,8 +626,10 @@ export default function ProdukPage() {
         category_id: prodData.category_id,
         kategori: prodData.kategori,
         harga: prodData.hargaJual,
+        hpp: prodData.hpp,
         stok: prodData.status === 'Sold Out' ? 0 : prodData.stok,
         deskripsi: prodData.deskripsi,
+        gambar: prodData.gambar || null,
         is_active: prodData.status !== 'Tidak Aktif',
       };
 
@@ -1000,10 +1101,33 @@ export default function ProdukPage() {
                       onMouseEnter={(e) => (e.currentTarget.style.background = '#FAF7F2')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = '#FFFFFF')}
                     >
-                      {/* Nama Produk */}
+                      {/* Nama Produk & Thumbnail Gambar */}
                       <td style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Package size={16} color="#8C7A6B" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '7px',
+                              border: '1px solid #E6DED4',
+                              background: '#FAF7F2',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {p.gambar ? (
+                              <img
+                                src={p.gambar}
+                                alt={p.nama}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <Package size={16} color="#8C7A6B" />
+                            )}
+                          </div>
                           <div>
                             <div style={{ fontWeight: '600', color: '#241B14' }}>{p.nama}</div>
                             {p.deskripsi && (
@@ -1011,7 +1135,7 @@ export default function ProdukPage() {
                                 style={{
                                   fontSize: '11px',
                                   color: '#8C7A6B',
-                                  maxWidth: '220px',
+                                  maxWidth: '240px',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                 }}
